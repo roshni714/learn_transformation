@@ -1,0 +1,6 @@
+data_loader:
+  name: "CIFAR10"
+device: "cuda:0"
+pretrained_model:
+  path: "pretrained_models/cifar/checkpoint_19.tar"
+batch_size: 32

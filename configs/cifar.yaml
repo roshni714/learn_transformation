@@ -1,0 +1,5 @@
+data_loader:
+  name: "CIFAR10"
+save_dir: "pretrained_models/cifar"
+device: "cuda:0"
+batch_size: 32
