@@ -3,12 +3,12 @@ data_loader:
   input_size: [3, 32, 32]
   corruption:
     color_jitter:
-      saturation: [1.249, 1.251]
-device: "cuda:1"
+      brightness: [0.49, 0.51]
+device: "cuda:0"
 tnet:
   save_dir: "tnet_models/demo"
-  transform_list: ["saturation"]
+  transform_list: ["brightness"]
   batch_size: 128
 pretrained_model:
-  path: "pretrained_models/checkpoint_24.tar"
+  path: "pretrained_models/cifar/checkpoint_19.tar"
 

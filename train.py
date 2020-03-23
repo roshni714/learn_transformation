@@ -14,13 +14,14 @@ def get_dataset(dataset_config):
     dataset = dataset_config["name"]
     corruption = dataset_config["corruption"]
 
-    train_transform = transforms.Compose([transforms.RandomHorizontalFlip(),
-                                    transforms.ToTensor()])
+    train_transform = transforms.Compose([transforms.ToTensor(), 
+                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     test_transform = []
     for key in corruption:
         if key == "color_jitter":
             test_transform.append(transforms.ColorJitter(**corruption[key]))
     test_transform.append(transforms.ToTensor())
+    test_transform.append(transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
 
     if dataset =="CIFAR10":
         trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform)

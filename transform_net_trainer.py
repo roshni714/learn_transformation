@@ -1,6 +1,6 @@
 import torch
 from tensorboardX import SummaryWriter
-
+from datetime import datetime
 
 class TransformNetTrainer():
 
@@ -13,7 +13,7 @@ class TransformNetTrainer():
         self.train_loader = train_loader
         self.test_loader = test_loader
 
-        self.optimizer = torch.optim.Adam(self.transform_net.parameters(), lr=1e-3)
+        self.optimizer = torch.optim.Adam(self.transform_net.parameters(), lr=1e-2)
 
         names ='_'.join(transform_list)
 
@@ -33,7 +33,6 @@ class TransformNetTrainer():
             img, label = sample
             img = img.float().to(self.device)
             embeddings.append(self.pretrained_model(img).detach())
-            break
 
         return embeddings
 
@@ -90,6 +89,7 @@ class TransformNetTrainer():
     def apply_transform_batch(self, img_batch, transform_out):
         transform_act = torch.zeros(1, transform_out.shape[-1])
         sigmoid = torch.nn.Sigmoid()
+        tanh = torch.nn.Tanh()
 
         new_img_batch = torch.zeros(img_batch.shape).to(img_batch.get_device())
         for i in range(img_batch.shape[0]):
@@ -100,6 +100,10 @@ class TransformNetTrainer():
                     sat_act = 2 * sigmoid(transform_out[i][j])
                     transform_act[j] += sat_act
                     new_img_batch[i] = adjust_saturation(img_batch[i], sat_act)
+                if name == "brightness":
+                    bright_act = tanh(transform_out[i][j])
+                    transform_act[j] += bright_act
+                    new_img_batch[i] = adjust_brightness(img_batch[i], bright_act)
 
         transform_act /= new_img_batch.shape[0]
         return new_img_batch, transform_act
@@ -123,20 +127,7 @@ def adjust_saturation(img, sat):
     return new_img
 
 def adjust_brightness(img, brightness):
-
-    device = img.get_device()
-    square = torch.pow(img, 2)
-    vals = [0.299, 0.587, 0.114]
-    mult = torch.ones(img.shape)
-    for i in range(len(vals)):
-        mult[i, :, :] *= vals[i]
-    mult= mult.to(device)
-    res = square * mult
-    p = res.sum(dim=0).sqrt().unsqueeze(0)
-
-    copy_p = p.repeat(3, 1, 1)
-
-    new_img = copy_p + (img - copy_p) * sat
+    new_img = img + brightness
     return new_img
 
 

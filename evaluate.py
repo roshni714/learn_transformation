@@ -14,11 +14,12 @@ DEFAULT_CONFIG = "configs/cifar_eval.yaml"
 
 def get_dataset(dataset_config):
     dataset = dataset_config["name"]
-    train_transform = transforms.Compose([transforms.ToTensor()])
+    train_transform = transforms.ToTensor()
     if dataset =="CIFAR10":
         testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=train_transform)
-    
-    return testset
+        trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform)
+   
+    return trainset, testset
 
 def main():
     parser = argparse.ArgumentParser(description="Classifier")
@@ -53,12 +54,13 @@ def main():
     model.to(device)
 
 
-    test_data = get_dataset(config["data_loader"])
+    train_data, test_data = get_dataset(config["data_loader"])
     batch_size = config["batch_size"]
 
+    train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=False)
     test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False)
-
-    evaluater= Evaluater(model, test_loader, device)
+    transform_list = config["transform_list"]
+    evaluater= Evaluater(model, train_loader, test_loader, transform_list,  device)
     evaluater.evaluate()
 
 if __name__ == "__main__":
