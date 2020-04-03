@@ -1,14 +1,17 @@
 data_loader:
-  name: "CIFAR10"
-  input_size: [3, 32, 32]
+  name: "STL10"
   corruption:
+          #    rotation:
+            #      degrees: [10.1, 10.2]
+            #      resample: 3
     color_jitter:
       brightness: [0.49, 0.51]
-device: "cuda:0"
+device: "cuda:2"
+batch_size: 32
 tnet:
   save_dir: "tnet_models/demo"
   transform_list: ["brightness"]
   batch_size: 128
 pretrained_model:
-  path: "pretrained_models/cifar/checkpoint_19.tar"
+  path: "pretrained_models/cifar_2/checkpoint_15.tar"
 

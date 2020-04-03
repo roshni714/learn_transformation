@@ -13,17 +13,25 @@ DEFAULT_CONFIG = "configs/cifar.yaml"
 
 def get_dataset(dataset_config):
     dataset = dataset_config["name"]
-    train_transform = transforms.Compose([transforms.RandomHorizontalFlip(),
-                                          transforms.RandomCrop(32, padding=4),
-                                          transforms.ToTensor(),
-                                          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     if dataset =="CIFAR10":
-        trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform)
-    
+       train_transform = transforms.Compose([transforms.RandomHorizontalFlip(),
+                                          transforms.RandomCrop(32, padding=4),
+                                          transforms.ToTensor()])
+       input_size = [3, 32,32]
+       trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform)
+    elif dataset == "STL10":
+       train_transform = transforms.Compose([transforms.Resize(size=224),
+                                          transforms.RandomHorizontalFlip(),
+                                          transforms.RandomCrop(224, padding=4),
+                                          transforms.ToTensor()])
+ 
+       trainset = torchvision.datasets.STL10(root='./data', split="train", download=True, transform=train_transform)
+
+       input_size = [3, 224, 224]
     train_len = int(0.8* len(trainset))
 
     train, val = random_split(trainset, [train_len, len(trainset) - train_len])
-    return train, val
+    return train, val, input_size
 
 def main():
     parser = argparse.ArgumentParser(description="Classifier")
@@ -44,19 +52,20 @@ def main():
     device = torch.device(config["device"] if torch.cuda.is_available() else "cpu")
     print("Device: {}".format(device))
 
+    train_data, val_data, input_size = get_dataset(config["data_loader"])
 
     #Pretrained Model Architecture
 
     num_channels = 3
     model_name = "resnet18"
     num_classes = 10
-    model = network.get_model(name=model_name, 
+    model = network.get_model(name=model_name,
+                              input_size = input_size,
                               pretrained=False, 
                               num_channels=num_channels, 
                               num_classes=num_classes)
     model.to(device)
 
-    train_data, val_data = get_dataset(config["data_loader"])
     batch_size = config["batch_size"]
 
     val_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size, shuffle=True)

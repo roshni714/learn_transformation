@@ -1,7 +1,7 @@
 data_loader:
   name: "CIFAR10"
-device: "cuda:1"
-transform_list: ["brightness", "contrast", "saturation", "hue", "rotation"]
+device: "cuda:2"
+transform_list: ["rotation", "brightness", "contrast", "saturation", "hue"]
 pretrained_model:
   path: "pretrained_models/cifar/checkpoint_19.tar"
 batch_size: 32

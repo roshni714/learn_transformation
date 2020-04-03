@@ -7,27 +7,42 @@ import modules.network as network
 from transform_net_trainer import TransformNetTrainer
 import torchvision
 import torchvision.transforms as transforms
-
+import PIL
 DEFAULT_CONFIG = "configs/tnet.yaml"
 
 def get_dataset(dataset_config):
     dataset = dataset_config["name"]
     corruption = dataset_config["corruption"]
 
-    train_transform = transforms.Compose([transforms.ToTensor(), 
-                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    train_transform = transforms.Compose([transforms.ToTensor()]) 
     test_transform = []
     for key in corruption:
         if key == "color_jitter":
             test_transform.append(transforms.ColorJitter(**corruption[key]))
+        if key == "rotation":
+            test_transform.append(transforms.RandomRotation(**corruption[key]))
     test_transform.append(transforms.ToTensor())
-    test_transform.append(transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
 
     if dataset =="CIFAR10":
         trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform)
         testset = torchvision.datasets.CIFAR10(root='./data', train=False,
                                        download=True, transform=transforms.Compose(test_transform))
-    return trainset, testset
+        input_size = [3, 32, 32]
+    elif dataset == "STL10":
+
+        train_transform = transforms.Compose([transforms.Resize(size=224), transforms.ToTensor()]) 
+        test_transform = [transforms.Resize(size=224)]
+        for key in corruption:
+            if key == "color_jitter":
+                test_transform.append(transforms.ColorJitter(**corruption[key]))
+            if key == "rotation":
+                test_transform.append(transforms.RandomRotation(**corruption[key]))
+        test_transform.append(transforms.ToTensor())
+
+        trainset = torchvision.datasets.STL10(root='./data', split='train', download=True, transform= train_transform)
+        testset = torchvision.datasets.STL10(root='./data', split='test', download=True, transform=transforms.Compose(test_transform))
+        input_size = [3, 224, 224]
+    return trainset, testset, input_size
 
 def main():
     parser = argparse.ArgumentParser(description="TransformNet Trainer")
@@ -49,12 +64,20 @@ def main():
     print("Device: {}".format(device))
 
 
+    #Load Data and get image size
+    train_data, test_data, input_size = get_dataset(config["data_loader"])
+    batch_size = config["tnet"]["batch_size"]
+    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=True)
+    train_loader = torch.utils.data.DataLoader(train_data, batch_size=1, shuffle=False)
+
+
     #Pretrained Model Architecture
 
     num_channels = 3
     model_name = "resnet18"
     num_classes = 10
-    pretrained_model = network.get_model(name=model_name, 
+    pretrained_model = network.get_model(name=model_name,
+                              input_size = input_size,
                               pretrained=False, 
                               num_channels=num_channels, 
                               num_classes=num_classes)
@@ -74,13 +97,6 @@ def main():
                               num_channels=num_channels, 
                               num_classes=num_classes)
     transform_net.to(device)
-
-    train_data, test_data = get_dataset(config["data_loader"])
-    batch_size = config["tnet"]["batch_size"]
-
-    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=True)
-
-    train_loader = torch.utils.data.DataLoader(train_data, batch_size=1, shuffle=False)
 
     num_epochs = 40
 

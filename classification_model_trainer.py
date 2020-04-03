@@ -33,7 +33,6 @@ class Trainer():
             img, label = sample
             img = img.float().to(self.device)
             label = label.to(self.device)
-
             out = self.model(img)
             loss = criterion(out, label)
 

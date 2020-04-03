@@ -43,7 +43,8 @@ def main():
     num_channels = 3
     model_name = "resnet18"
     num_classes = 10
-    model = network.get_model(name=model_name, 
+    model = network.get_model(name=model_name,
+                              input_size=[3, 32, 32],
                               pretrained=False, 
                               num_channels=num_channels, 
                               num_classes=num_classes)
@@ -58,7 +59,7 @@ def main():
     batch_size = config["batch_size"]
 
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=False)
-    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False)
+    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=True)
     transform_list = config["transform_list"]
     evaluater= Evaluater(model, train_loader, test_loader, transform_list,  device)
     evaluater.evaluate()

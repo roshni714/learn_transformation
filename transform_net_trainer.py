@@ -22,38 +22,66 @@ class TransformNetTrainer():
         self.writer= SummaryWriter("runs/{}/{}".format(names, timestamp))
 
         self.epoch = 0
-        self.train_data_embeddings = self.generate_train_embeddings()
+#        self.normalized_embeddings, self.labels, self.mean_embed, self.std_embed = self.generate_train_embeddings()
+#        self.centroids = self.generate_train_centroids()
 
+    def generate_train_centroids(self):
+        print("Calculating centroids")
+
+        clusters = [[] for i in range(10)]
+
+        for i, embedding in enumerate(self.normalized_embeddings):
+            label = int(self.labels[i])
+            clusters[label].append(embedding.numpy())
+
+        centroids = [torch.Tensor(cluster).mean(dim=0).to(self.device) for cluster in clusters]
+
+        return centroids
 
     def generate_train_embeddings(self):
-        print("Generating trainset embeddings")
-        embeddings = []
-
-        for i, sample in enumerate(self.train_loader):
-            img, label = sample
-            img = img.float().to(self.device)
-            embeddings.append(self.pretrained_model(img).detach())
-
-        return embeddings
-
-
-    def nearest_neighbor_embedding_loss(self, test_example_batch):
+        original_embeddings = []
+        labels = []
 
         self.pretrained_model.eval()
-        test_embedding_batch = self.pretrained_model(test_example_batch)
+
+        for i, data in enumerate(self.train_loader):
+            img_batch, label_batch = data
+            img_batch = img_batch.float().to(self.device)
+            out_original = self.pretrained_model.get_layer4(img_batch).detach().cpu().numpy()
+            for j in range(out_original.shape[0]):
+                original_embeddings.append(out_original[j])
+                labels.append(label_batch[j])
+
+        original_embeddings = torch.Tensor(original_embeddings)
+        mean = torch.mean(original_embeddings, dim=0)
+        std = torch.std(original_embeddings, dim=0)
+        normalized_embeddings = (original_embeddings - mean)/std
+        return normalized_embeddings, labels, mean, std
+
+    def get_weighted_distance(self, test_batch):
+
+        softmax = torch.nn.Softmax(dim=1)
+        vecs = self.pretrained_model.get_layer4(test_batch)
+        weights = softmax(self.pretrained_model(test_batch))
+
+
+        dist = 0.
+        for j in range(test_batch.shape[0]):
+            max_index = torch.argmax(weights[j])
+            for i in range(len(weights[j])):
+                if i != max_index:
+                    dist += (1/torch.sqrt(torch.sum(torch.pow(self.centroids[i] -vecs[j], 2)))) *weights[j][i]
+                else:
+                    dist += torch.sqrt(torch.sum(torch.pow(self.centroids[i] -vecs[j], 2))) * (1/weights[j][i])
+        return dist
+
+
+    def msp_loss(self, test_example_batch):
+
+        self.pretrained_model.eval()
         
-        mse= torch.nn.MSELoss(reduction="sum")
-
-        batch_loss = 0.
-        for j in range(test_example_batch.shape[0]):
-            min_dist = float("inf")
-            for train_embedding in self.train_data_embeddings:
-                loss = mse(train_embedding, test_embedding_batch[j])
-
-                if loss < min_dist:
-                    min_dist = loss
-
-            batch_loss += min_dist
+        softmax = torch.nn.Softmax(dim=1)
+        batch_loss= 1/torch.sum(torch.max(softmax(self.pretrained_model(test_example_batch)), dim=1)[0]) 
 
         return batch_loss/test_example_batch.shape[0]
 
@@ -71,7 +99,7 @@ class TransformNetTrainer():
             
             transform_out  = self.transform_net(img)
             transformed_test_batch, transform_param= self.apply_transform_batch(img, transform_out)
-            loss = self.nearest_neighbor_embedding_loss(transformed_test_batch)
+            loss = self.msp_loss(transformed_test_batch)
 
             self.optimizer.zero_grad()
             loss.backward()
@@ -104,7 +132,6 @@ class TransformNetTrainer():
                     bright_act = tanh(transform_out[i][j])
                     transform_act[j] += bright_act
                     new_img_batch[i] = adjust_brightness(img_batch[i], bright_act)
-
         transform_act /= new_img_batch.shape[0]
         return new_img_batch, transform_act
             
@@ -128,6 +155,6 @@ def adjust_saturation(img, sat):
 
 def adjust_brightness(img, brightness):
     new_img = img + brightness
-    return new_img
+    return torch.clamp(new_img, 0, 1)
 
 

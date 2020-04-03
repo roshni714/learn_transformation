@@ -1,0 +1,5 @@
+data_loader:
+  name: "STL10"
+save_dir: "pretrained_models/stl"
+device: "cuda:1"
+batch_size: 32
