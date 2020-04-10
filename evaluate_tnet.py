@@ -4,7 +4,7 @@ import sys
 import torch
 import yaml
 import modules.network as network
-from transform_net_trainer import TransformNetTrainer
+from transform_net_evaluater import TransformNetEvaluater
 import torchvision
 import torchvision.transforms as transforms
 import PIL
@@ -57,18 +57,15 @@ def main():
     with open(config_file) as fp:
         config = yaml.load(fp)
 
-    if not os.path.exists(config["tnet"]["save_dir"]):
-        os.makedirs(config["tnet"]["save_dir"])
 
     device = torch.device(config["device"] if torch.cuda.is_available() else "cpu")
     print("Device: {}".format(device))
 
 
     #Load Data and get image size
-    train_data, test_data, input_size = get_dataset(config["data_loader"])
-    batch_size = config["tnet"]["batch_size"]
+    _, test_data, input_size = get_dataset(config["data_loader"])
+    batch_size = config["batch_size"]
     test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=True)
-    train_loader = torch.utils.data.DataLoader(train_data, batch_size=1, shuffle=False)
 
 
     #Pretrained Model Architecture
@@ -91,25 +88,22 @@ def main():
     model_name = "resnet18"
     transform_list = config["tnet"]["transform_list"]
     num_classes = len(transform_list)
-    print(num_classes)
     transform_net = network.get_model(name=model_name,
                               input_size=[3, 32, 32],
                               pretrained=True, 
                               num_channels=num_channels, 
                               num_classes=num_classes)
     transform_net.to(device)
+    transform_net_path = config["tnet"]["path"]
+    checkpoint = torch.load(transform_net_path)
+    transform_net.load_state_dict(checkpoint["state_dict"])
+    transform_net.to(device)
 
     num_epochs = 40
 
 
-    trainer = TransformNetTrainer(transform_net, transform_list, pretrained_model, train_loader, test_loader, device)
-
-    torch.autograd.set_detect_anomaly(True)
-    for epoch in range(num_epochs):
-        trainer.train()
-        state = {'state_dict': trainer.transform_net.state_dict()}
-        torch.save(state, os.path.join(config["tnet"]["save_dir"], "checkpoint_{}.tar".format(trainer.epoch)))
-
+    evaluater = TransformNetEvaluater(transform_net, pretrained_model, test_loader, transform_list, device)
+    evaluater.evaluate()
 
 if __name__ == "__main__":
     main()

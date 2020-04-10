@@ -6,12 +6,11 @@ data_loader:
       resample: 3
             #    color_jitter:
             #      brightness: [0.49, 0.51]
-device: "cuda:0"
+device: "cuda:3"
 batch_size: 128
 tnet:
-  save_dir: "tnet_models/demo"
   transform_list: ["rotation"]
-  batch_size: 128
+  path: "tnet_models/demo/checkpoint_16.tar"
 pretrained_model:
   path: "pretrained_models/cifar_2/checkpoint_17.tar"
 

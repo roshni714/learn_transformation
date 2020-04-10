@@ -1,4 +1,4 @@
-import tor
+import torch
 import torchvision.transforms as transforms
 import numpy as np
 from sklearn.manifold import TSNE
@@ -257,7 +257,7 @@ class Evaluater():
             img_batch, label = sample
             for j in range(img_batch.shape[0]):
                 img = img_batch[j]
-                embedding_error = []
+                softmax_max= []
 
                 for point in points:
                     dic = {name_to_arg[tf]: [point - 0.001, point + 0.001]}
@@ -270,21 +270,14 @@ class Evaluater():
                         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
                     shifted_img = tfs(img).float().to(self.device).unsqueeze(dim=0)
-
                     last_layer = self.model(shifted_img)
-                    pred_class = torch.argmax(last_layer).unsqueeze(dim=0)
-
-                    out_shifted = self.model.get_layer4(shifted_img).detach().cpu()
-                    out_shifted = (out_shifted - self.mean_embed)/self.std_embed
-                   
                     weights = softmax(last_layer)
 
-                    error = self.get_weighted_distance(out_shifted, weights)
-                    embedding_error.append(error)
+                    softmax_max.append(torch.max(weights))
 
-                index = torch.argmin(torch.Tensor(embedding_error))
+                index = torch.argmax(torch.Tensor(softmax_max))
                 optimal_tf = points[index.item()]
-                optimal_tf_dist.append((label, optimal_tf)) 
+                optimal_tf_dist.append((label[j], optimal_tf)) 
 
         return {"opt_tf_dist": optimal_tf_dist,  "name": tf}
 
@@ -309,8 +302,7 @@ class Evaluater():
 
         for i in range(10):
             ax = f.add_subplot(5, 2, i+1)
-            """
-            class_mins =[ opt_tf for label, opt_tf in  list(filter(lambda x: x[0]!=i, opt_tf_dist))]
+            class_mins =[ opt_tf for label, opt_tf in  list(filter(lambda x: x[0] !=i, opt_tf_dist))]
             ax.set_xlabel("{} Parameter".format(name))
             ax.set_ylabel("Count")
             ax.set_title("Class {}".format(i))
@@ -318,7 +310,6 @@ class Evaluater():
         plt.title("Distribution of Optimal {} Parameter".format(name))
         plt.savefig("figs/hist/{}/class_specific.pdf")
         plt.close()
-        """
 
     def generate_tsne_plot_over_transform(self, tf=None):
         def get_color_map(labels):

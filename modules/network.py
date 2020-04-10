@@ -2,7 +2,7 @@ import torch.nn as nn
 from torchvision import models
 from modules.resnet import ResNet18 
 
-def get_model(name, pretrained, num_channels, num_classes):
+def get_model(name, input_size, pretrained, num_channels, num_classes):
     """
     Method that returns a torchvision model given a model
     name, pretrained (or not), number of channels,
@@ -14,22 +14,17 @@ def get_model(name, pretrained, num_channels, num_classes):
         num_channels- int number of channels
         num_classes- number of outputs of the network
     """
-    if "resnet18"==name:
+    if "resnet18"==name and input_size==[3, 32, 32]:
         if num_channels == 1:
             model = ResNet18Grayscale(models.resnet.BasicBlock,
                                           [2, 2, 2, 2],
                                           num_classes)
         else:
-            print(num_classes)
             model = ResNet18(num_classes=num_classes)
-    else:
+    elif "resnet18"==name and input_size==[3, 224, 224]:
         function = getattr(models, name)
         model = function(pretrained=pretrained)
-
-
-        model = nn.Sequential(*(list(model.children())[:-1]))
-        model.classifier.add_module('6', nn.Linear(
-            list(model.classifier.children()))[-3].in_features, num_classes)
+        model.fc = nn.Linear(model.fc.in_features, num_classes)
 
     return model
 
