@@ -1,9 +1,7 @@
 data_loader:
   name: "CIFAR10"
   corruption:
-    rotation:
-      degrees: [-10.001, -9.999]
-      resample: 3
+    degrees: -10
 device: "cuda:0"
 batch_size: 128
 tnet:
