@@ -38,6 +38,8 @@ def get_dataset(dataset_config):
         input_size = [3, 224, 224]
     return trainset, corrupt_testset, input_size
 
+
+
 def main():
     parser = argparse.ArgumentParser(description="TransformNet Trainer")
     parser.add_argument('-c', '--config', default=DEFAULT_CONFIG, type=str)
