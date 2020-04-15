@@ -1,0 +1,13 @@
+data_loader:
+  name: "CIFAR10"
+  corruption:
+      color_jitter:
+          hue: [-0.451, -0.449]
+device: "cuda:3"
+batch_size: 128
+tnet:
+  transform_list: ["hue"]
+  path: "tnet_models/hue_-45/checkpoint_10.tar"
+pretrained_model:
+  path: "pretrained_models/cifar_resize_randomcrop/checkpoint_17.tar"
+

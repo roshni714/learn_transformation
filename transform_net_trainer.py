@@ -2,11 +2,13 @@ import torch
 from tensorboardX import SummaryWriter
 from datetime import datetime
 import differentiable_transforms as diff_tf
+import torchvision.models.vgg as models
+import torch.nn.functional as F 
 
 
 class TransformNetTrainer():
 
-    def __init__(self, transform_net, transform_list, pretrained_model, train_loader, test_loader, device):
+    def __init__(self, transform_net, transform_list, pretrained_model, train_loader, test_loader, writer_name, device):
         print("Setting up TransformNetTrainer")
 
         self.device = device
@@ -15,13 +17,13 @@ class TransformNetTrainer():
         self.train_loader = train_loader
         self.test_loader = test_loader
 
-        self.optimizer = torch.optim.Adam(self.transform_net.parameters(), lr=1e-4)
-
+#        self.optimizer = torch.optim.SGD([transform_net], lr=1e-1)
+        self.optimizer = torch.optim.Adam(self.transform_net.parameters(), lr=1e-3)
         names ='_'.join(transform_list)
 
         self.transform_list = transform_list
         timestamp = datetime.timestamp(datetime.now())
-        self.writer= SummaryWriter("runs/{}/{}".format(names, timestamp))
+        self.writer= SummaryWriter(writer_name)
 
         self.epoch = 0
 #        self.normalized_embeddings, self.labels, self.mean_embed, self.std_embed = self.generate_train_embeddings()
@@ -40,25 +42,44 @@ class TransformNetTrainer():
 
         return centroids
 
-    def generate_train_embeddings(self):
-        original_embeddings = []
-        labels = []
-
+    def gradient_loss(self, img_batch):
         self.pretrained_model.eval()
+        grads = []
 
-        for i, data in enumerate(self.train_loader):
-            img_batch, label_batch = data
-            img_batch = img_batch.float().to(self.device)
-            out_original = self.pretrained_model.get_layer4(img_batch).detach().cpu().numpy()
-            for j in range(out_original.shape[0]):
-                original_embeddings.append(out_original[j])
-                labels.append(label_batch[j])
 
-        original_embeddings = torch.Tensor(original_embeddings)
-        mean = torch.mean(original_embeddings, dim=0)
-        std = torch.std(original_embeddings, dim=0)
-        normalized_embeddings = (original_embeddings - mean)/std
-        return normalized_embeddings, labels, mean, std
+        out = self.pretrained_model(img_batch)
+        target = torch.argmax(out, dim=1)
+        loss = F.nll_loss(out, target)
+        loss.backward()
+
+        for param in self.pretrained_model.parameters():
+            grads.append(param.grad.view(-1))
+        grads = torch.cat(grads)
+
+        grad_loss = -torch.mean(torch.abs(grads))
+
+        return grad_loss
+
+
+    def generate_train_embeddings(self):
+         original_embeddings = []
+         labels = []
+
+         self.pretrained_model.eval()
+
+         for i, data in enumerate(self.train_loader):
+             img_batch, label_batch = data
+             img_batch = img_batch.float().to(self.device)
+             out_original = self.pretrained_model.get_layer4(img_batch).detach().cpu().numpy()
+             for j in range(out_original.shape[0]):
+                 original_embeddings.append(out_original[j])
+                 labels.append(label_batch[j])
+
+         original_embeddings = torch.Tensor(original_embeddings)
+         mean = torch.mean(original_embeddings, dim=0)
+         std = torch.std(original_embeddings, dim=0)
+         normalized_embeddings = (original_embeddings - mean)/std
+         return normalized_embeddings, labels, mean, std
 
     def get_weighted_distance(self, test_batch):
 
@@ -78,37 +99,48 @@ class TransformNetTrainer():
         return dist
 
 
-    def msp_loss(self, test_example_batch, transform_param):
+    def msp_loss(self, test_example_batch):
 
         self.pretrained_model.eval()
-        
-        batch_loss= - torch.min(torch.max(self.pretrained_model(test_example_batch))[0])
-
+        softmax = torch.nn.Softmax()
+        batch_loss = -torch.mean(torch.max(softmax(self.pretrained_model(test_example_batch)), dim=1)[0])
         return batch_loss
+
+
+    def entropy_loss(self, test_example_batch):
+
+        self.pretrained_model.eval()
+        softmax = torch.nn.Softmax(dim=1)
+        logsoftmax = torch.nn.LogSoftmax(dim=1)
+        out = self.pretrained_model(test_example_batch)
+        batch_loss = -torch.mean(torch.sum(softmax(out)* logsoftmax(out), dim=1))
+        return batch_loss
+
 
     def train(self):
 
         self.pretrained_model.eval()
         self.transform_net.train()
 
-
         for i, sample in enumerate(self.test_loader):
             cur_iter = self.epoch*len(self.test_loader) + i
-
             img, label = sample
             img = img.float().to(self.device)
-            
             transform_out  = self.transform_net(img)
-            transformed_test_batch, transform_param= diff_tf.apply_transform_batch(img, transform_out, self.transform_list)
-            loss = self.msp_loss(transformed_test_batch, transform_param)
+            transformed_test_batch, mean_transform, var_transform = diff_tf.apply_transform_batch(img, transform_out, self.transform_list)
+            loss = self.entropy_loss(transformed_test_batch)
+
 
             self.optimizer.zero_grad()
             loss.backward()
+
             self.optimizer.step()
 
             self.writer.add_scalar('data/loss', loss.item(), cur_iter)
             for j, tf  in enumerate(self.transform_list):
-                self.writer.add_scalar('data/{}'.format(tf), transform_param[j].item(), cur_iter)
+                self.writer.add_scalar('data/{}'.format(tf), mean_transform[j], cur_iter)
+                self.writer.add_scalar('data/{}_var'.format(tf), var_transform[j], cur_iter)
+
                 self.writer.add_image('img/corrupted', img[0], cur_iter)
                 self.writer.add_image('img/transformed', transformed_test_batch[0], cur_iter)
             print("Epoch: [{0}][{1}/{2}]\t Loss {3}".format(self.epoch, i, len(self.test_loader), round(loss.item(), 4)))

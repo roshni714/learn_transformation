@@ -1,13 +1,12 @@
 data_loader:
   name: "CIFAR10"
   corruption:
-     color_jitter:
-         brightness: [0.499, 0.501]
+    brightness: 1.
 device: "cuda:0"
 batch_size: 128
 tnet:
-  save_as: "runs/demo_brightness"
-  save_dir: "tnet_models/demo"
+  save_as: "runs/br_100"
+  save_dir: "tnet_models/br_100/"
   transform_list: ["brightness"]
   batch_size: 128
 pretrained_model:

@@ -8,6 +8,7 @@ from transform_net_evaluater import TransformNetEvaluater
 import torchvision
 import torchvision.transforms as transforms
 import PIL
+import csv
 DEFAULT_CONFIG = "configs/tnet.yaml"
 
 def get_dataset(dataset_config):
@@ -20,7 +21,9 @@ def get_dataset(dataset_config):
         if key == "color_jitter":
             test_transform.append(transforms.ColorJitter(**corruption[key]))
         if key == "rotation":
+            test_transform.append(transforms.Resize((36,36)))
             test_transform.append(transforms.RandomRotation(**corruption[key]))
+            test_transform.append(transforms.CenterCrop((32, 32)))
     test_transform.append(transforms.ToTensor())
 
     if dataset =="CIFAR10":
@@ -80,6 +83,7 @@ def main():
                               num_classes=num_classes)
     pretrained_model_path = config["pretrained_model"]["path"]
     checkpoint = torch.load(pretrained_model_path)
+
     pretrained_model.load_state_dict(checkpoint["state_dict"])
     pretrained_model.to(device)
 
@@ -93,17 +97,25 @@ def main():
                               pretrained=True, 
                               num_channels=num_channels, 
                               num_classes=num_classes)
-    transform_net.to(device)
     transform_net_path = config["tnet"]["path"]
-    checkpoint = torch.load(transform_net_path)
-    transform_net.load_state_dict(checkpoint["state_dict"])
-    transform_net.to(device)
-
-    num_epochs = 40
+    transform_net= torch.load(transform_net_path)["state_dict"].to(device)
 
 
     evaluater = TransformNetEvaluater(transform_net, pretrained_model, test_loader, transform_list, device)
-    evaluater.evaluate()
+    dic = evaluater.evaluate()
+
+    corruption_param=float(config_file.split("_")[-1].split(".")[0])
+    print(corruption_param)
+
+    dic["corruption_param"] = corruption_param
+    name= "_".join(transform_list)
+    
+    with open('results_dist_{}.csv'.format(name), 'a+', newline='') as csvfile:
+        field_names = ["corruption_param",  "pretrained_acc", "tnet_acc",  "transform_param", "transform_var"]
+        dict_writer = csv.DictWriter(csvfile, fieldnames=field_names)
+        dict_writer.writerow(dic)
+
+
 
 if __name__ == "__main__":
     main()

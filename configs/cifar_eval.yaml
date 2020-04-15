@@ -3,5 +3,5 @@ data_loader:
 device: "cuda:2"
 transform_list: ["rotation", "brightness", "contrast", "saturation", "hue"]
 pretrained_model:
-  path: "pretrained_models/cifar_2/checkpoint_17.tar"
+  path: "pretrained_models/cifar_resize_randomcrop/checkpoint_17.tar"
 batch_size: 32

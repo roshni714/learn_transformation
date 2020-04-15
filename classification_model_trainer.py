@@ -59,6 +59,7 @@ class Trainer():
 
             if i == 0:
                 self.val_writer.add_scalar('data/loss', loss.item(), cur_iter)
+                self.val_writer.add_image('img/image', img[0], cur_iter)
                 print("Test: [{0}][{1}/{2}]\t Loss {3}".format(self.epoch, i, len(self.train_loader), round(loss.item(), 4)))
 
 

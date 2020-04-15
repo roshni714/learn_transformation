@@ -1,68 +1,122 @@
 import torch
-import torchgeometry as tgm
+import operations as op
+from torchvision import transforms
+
+tf_to_method = {"saturation": op.adjust_saturation, 
+                "brightness": op.adjust_brightness,
+                "rotation": op.adjust_rotation,
+                "hue": op.adjust_hue}
 
 def apply_transform_batch(img_batch, transform_out, transform_list):
         sigmoid = torch.nn.Sigmoid()
         tanh = torch.nn.Tanh()
+        softplus = torch.nn.Softplus()
 
-        transform_act = torch.zeros(1, transform_out.shape[1]).to(img_batch.get_device())
-        new_img_batch = torch.zeros(img_batch.shape).to(img_batch.get_device())
-        for i in range(img_batch.shape[0]):
-            for j, tf in enumerate(transform_list):
-                name = tf
+        mean_transform = torch.zeros(1, transform_out.shape[1]).to(img_batch.get_device())
+        variance_transform = torch.zeros(1, transform_out.shape[1]).to(img_batch.get_device())
 
-                if name == "saturation":
-                    sat_act = 2 * sigmoid(transform_out[i][j])
-                    transform_act[j] += sat_act
-                    new_img_batch[i] = adjust_saturation(img_batch[i], sat_act)
-                if name == "brightness":
-                    bright_act =0.5 * tanh(transform_out[i][j])
-                    transform_act[j] += bright_act
-                    new_img_batch[i] = adjust_brightness(img_batch[i], bright_act)
-                if name == "rotation":
-                    rot_act = 15 * torch.sin(transform_out[i][j])
-                    transform_act[j] += rot_act
-                    new_img_batch[i] = adjust_rotation(img_batch[i], rot_act)
-        transform_act /= new_img_batch.shape[0]
-        return new_img_batch, transform_act
+#        new_img_batch = torch.zeros(img_batch.shape).to(img_batch.get_device())
+        new_img_batch = img_batch
+        for j, tf in enumerate(transform_list):
+            name = tf
+            if name == "saturation":
+                act = 2 * sigmoid(transform_out[:, j])
+            if name == "brightness":
+                act = softplus(transform_out[:, j])
+            if name == "rotation":
+                act = 30 * torch.sin(transform_out[:, j])
+            if name == "hue":
+                act = 0.5*tanh(transform_out[:, j])
+
+            mean_transform[j] += torch.mean(act)
+            variance_transform[j] += torch.var(act)
+            new_img_batch = adjust_tf_batch(new_img_batch, act, tf_to_method[name])
+
+
+
+
+#        new_img_batch = img_batch
+#        for j, tf in enumerate(transform_list):
+#            name = tf
+#            new_img_batch = adjust_tf_batch(new_img_batch, transform_act[j], tf_to_method[name])
+
+        return new_img_batch, mean_transform, variance_transform
             
 
-def adjust_saturation(img, sat):
+def apply_transform_batch_nondiff(img_batch, transform_out, transform_list):
+        sigmoid = torch.nn.Sigmoid()
+        tanh = torch.nn.Tanh()
+        softplus = torch.nn.Softplus()
 
-    device = img.get_device()
-    square = torch.pow(img, 2)
-    vals = [0.299, 0.587, 0.114]
-    mult = torch.ones(img.shape)
-    for i in range(len(vals)):
-        mult[i, :, :] *= vals[i]
-    mult= mult.to(device)
-    res = square * mult
-    p = res.sum(dim=0).sqrt().unsqueeze(0)
+        transform_act = torch.zeros(1, transform_out.shape[1])
+        new_img_batch = torch.zeros(img_batch.shape)
+        for j, tf in enumerate(transform_list):
+            name = tf
+            if name == "saturation":
+                sat_act = 2 * sigmoid(transform_out[:, j])
+                transform_act[j] += torch.mean(sat_act)
+            if name == "brightness":
+                bright_act = softplus(transform_out[:, j])
+                transform_act[j] += torch.mean(bright_act)
+            if name == "rotation":
+                rot_act = 30 * torch.sin(transform_out[:, j])
+                transform_act[j] += torch.mean(rot_act)
+            if name == "hue":
+                hue_act = 0.5 * tanh(transform_out[:, j])
+                transform_act[j] += hue_act
+        
+        new_img_batch = img_batch
+        for j, tf in enumerate(transform_list):
+            name = tf
 
-    copy_p = p.repeat(3, 1, 1)
+            if name == "saturation":
+                new_img_batch = adjust_tf_batch(new_img_batch, transform_act[j], tf_to_method[name])
+            if name == "brightness":
+                new_img_batch = adjust_tf_batch(new_img_batch, transform_act[j], tf_to_method[name])
+            if name == "rotation":
+                new_img_batch = adjust_rotation_nondiff(new_img_batch, transform_act[j])
+            if name == "hue":
+                new_img_batch = adjust_tf_btach(new_img_batch, transform_act[j], tf_to_method[name])
+         
+        return new_img_batch, transform_act
 
-    new_img = copy_p + (img - copy_p) * sat
-    return new_img
+def adjust_rotation_nondiff(img_batch, rot):
 
-def adjust_brightness(img, brightness):
-    new_img = img + brightness
-    return torch.clamp(new_img, 0, 1)
+    new_img_batch = torch.zeros(img_batch.shape)
 
-def adjust_rotation(img, rotation):
-    img = img.unsqueeze(dim=0)
-    angle = torch.ones(1).to(img.get_device()) * rotation
-    # define the rotation center
-    center = torch.ones(1, 2).to(img.get_device())
-    center[..., 0] = img.shape[3] / 2  # x
-    center[..., 1] = img.shape[2] / 2  # y
-    # define the scale factor
-    scale = torch.ones(1).to(img.get_device())
+    for i in range(img_batch.shape[0]):
+        img = img_batch[i]
+        tfs = transforms.Compose([transforms.ToPILImage(), transforms.Resize((35, 35), interpolation=0),
+                   transforms.RandomRotation(degrees=[rot.item() -0.001, rot.item()+0.001], resample=3),
+                   transforms.CenterCrop((32, 32)),
+                   transforms.ToTensor()]) 
+        new_img_batch[i]= tfs(img).float().unsqueeze(dim=0)
 
-    # compute the transformation matrix
-    M = tgm.get_rotation_matrix2d(center, angle, scale)
+    return new_img_batch
 
-    # apply the transformation to original image
-    _, _, h, w = img.shape
-    img_warped = tgm.warp_affine(img, M, dsize=(h, w))
-    img_warped = img_warped.squeeze()
-    return img_warped
+def adjust_brightness_nondiff(img_batch, brightness):
+
+    new_img_batch = torch.zeros(img_batch.shape)
+
+    for i in range(img_batch.shape[0]):
+        img = img_batch[i]
+        tfs = transforms.Compose([transforms.ToPILImage(), transforms.ColorJitter(brightness=brightness.item()),
+                                  transforms.ToTensor()]) 
+        new_img_batch[i]= tfs(img).float().unsqueeze(dim=0)
+
+    return new_img_batch
+
+
+def adjust_tf_batch(img_batch, act, method):
+
+    if img_batch.get_device() >= 0:
+        new_img_batch = torch.zeros(img_batch.shape).to(img_batch.get_device())
+    else:
+        new_img_batch = torch.zeros(img_batch.shape)
+
+    for i in range(img_batch.shape[0]):
+        new_img_batch[i] = method(img_batch[i], act[i])
+    return new_img_batch
+
+
+

@@ -1,0 +1,13 @@
+data_loader:
+  name: "CIFAR10"
+  corruption:
+      color_jitter:
+          brightness: [0.749, 0.751]
+device: "cuda:3"
+batch_size: 128
+tnet:
+  transform_list: ["brightness"]
+  path: "tnet_models/br_075/checkpoint_10.tar"
+pretrained_model:
+  path: "pretrained_models/cifar_resize_randomcrop/checkpoint_17.tar"
+
