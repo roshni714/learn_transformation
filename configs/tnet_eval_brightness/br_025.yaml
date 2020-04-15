@@ -1,8 +1,7 @@
 data_loader:
   name: "CIFAR10"
   corruption:
-      color_jitter:
-          brightness: [0.249, 0.251]
+    brightness: 0.25
 device: "cuda:3"
 batch_size: 128
 tnet:
