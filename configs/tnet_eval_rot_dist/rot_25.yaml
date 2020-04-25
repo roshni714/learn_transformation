@@ -1,0 +1,13 @@
+data_loader:
+  name: "CIFAR10"
+  corruption:
+    degrees: 25
+    degrees_var: 2
+device: "cuda:3"
+batch_size: 128
+tnet:
+  transform_list: ["rotation"]
+  path: "tnet_models/rot_25_dist/checkpoint_60.tar"
+pretrained_model:
+  path: "pretrained_models/cifar_resize_randomcrop/checkpoint_17.tar"
+

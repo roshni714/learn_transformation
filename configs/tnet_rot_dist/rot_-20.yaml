@@ -6,8 +6,8 @@ data_loader:
 device: "cuda:0"
 batch_size: 128
 tnet:
-  save_as: "runs/rot_-20"
-  save_dir: "tnet_models/rot_-20"
+  save_as: "runs/rot_-20_dist"
+  save_dir: "tnet_models/rot_-20_dist"
   transform_list: ["rotation"]
   batch_size: 128
 pretrained_model:

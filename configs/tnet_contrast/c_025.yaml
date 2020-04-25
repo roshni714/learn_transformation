@@ -1,0 +1,15 @@
+data_loader:
+  name: "CIFAR10"
+  corruption:
+    contrast: 0.250
+device: "cuda:0"
+batch_size: 128
+tnet:
+  name: "vec"
+  save_as: "runs/c_025"
+  save_dir: "tnet_models/c_025/"
+  transform_list: ["contrast"]
+  batch_size: 128
+pretrained_model:
+  path: "pretrained_models/cifar_resize_randomcrop/checkpoint_17.tar"
+

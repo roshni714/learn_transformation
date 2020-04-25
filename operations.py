@@ -19,6 +19,15 @@ def adjust_saturation(img, sat):
     new_img = copy_p + (img - copy_p) * sat
     return new_img
 
+def adjust_contrast(img, contrast):
+    gray = kornia.rgb_to_grayscale(img)
+    if img.get_device() >= 0:
+        gray_img = torch.ones(img.shape).to(img.get_device()) * gray.mean()
+    else:
+        gray_img = torch.ones(img.shape) * gray.mean()
+
+    new_img = gray_img * (1- contrast) + img * contrast
+    return new_img
 
 
 def adjust_hue(img, factor):

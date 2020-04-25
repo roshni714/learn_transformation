@@ -5,7 +5,8 @@ from torchvision import transforms
 tf_to_method = {"saturation": op.adjust_saturation, 
                 "brightness": op.adjust_brightness,
                 "rotation": op.adjust_rotation,
-                "hue": op.adjust_hue}
+                "hue": op.adjust_hue,
+                "contrast": op.adjust_contrast}
 
 def apply_transform_batch(img_batch, transform_out, transform_list):
         sigmoid = torch.nn.Sigmoid()
@@ -19,8 +20,10 @@ def apply_transform_batch(img_batch, transform_out, transform_list):
         new_img_batch = img_batch
         for j, tf in enumerate(transform_list):
             name = tf
+            if name == "contrast":
+                act = softplus(transform_out[:, j])
             if name == "saturation":
-                act = 2 * sigmoid(transform_out[:, j])
+                act = sigmoid(transform_out[:, j])
             if name == "brightness":
                 act = softplus(transform_out[:, j])
             if name == "rotation":
@@ -28,8 +31,11 @@ def apply_transform_batch(img_batch, transform_out, transform_list):
             if name == "hue":
                 act = 0.5*tanh(transform_out[:, j])
 
-            mean_transform[j] += torch.mean(act)
-            variance_transform[j] += torch.var(act)
+            mean_transform[:, j] += torch.mean(act)
+            if act.shape[0] == 1:
+                variance_transform[:, j] = 0
+            else:
+                variance_transform[:, j] += torch.var(act)
             new_img_batch = adjust_tf_batch(new_img_batch, act, tf_to_method[name])
 
 
@@ -114,8 +120,15 @@ def adjust_tf_batch(img_batch, act, method):
     else:
         new_img_batch = torch.zeros(img_batch.shape)
 
+    if act.shape[0] == img_batch.shape[0]:
+        index = True
+    else:
+        index = False
     for i in range(img_batch.shape[0]):
-        new_img_batch[i] = method(img_batch[i], act[i])
+        if index:
+            new_img_batch[i] = method(img_batch[i], act[i])
+        else:
+            new_img_batch[i] = method(img_batch[i], act)
     return new_img_batch
 
 

@@ -1,0 +1,15 @@
+data_loader:
+  name: "CIFAR10"
+  corruption:
+      degrees: -10.
+      degrees_var: 2
+            #    color_jitter:
+            #      brightness: [0.49, 0.51]
+device: "cuda:3"
+batch_size: 128
+tnet:
+  transform_list: ["rotation"]
+  path: "tnet_models/rot_-10_dist/checkpoint_50.tar"
+pretrained_model:
+  path: "pretrained_models/cifar_resize_randomcrop/checkpoint_17.tar"
+

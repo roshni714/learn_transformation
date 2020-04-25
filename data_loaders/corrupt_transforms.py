@@ -11,7 +11,9 @@ class Corruption:
 
     def __call__(self, x):
         if self.degrees != 0.:
-            x = TF.rotate(x, self.degrees)
+            x = TF.resize(x, size=(36, 36))
+            x = TF.rotate(x, self.degrees, resample=3)
+            x = TF.center_crop(x, output_size=(32,32))
         if self.brightness != 1.:
             x = TF.adjust_brightness(x, self.brightness)
         if self.contrast != 1.:

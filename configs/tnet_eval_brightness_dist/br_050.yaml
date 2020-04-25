@@ -2,12 +2,12 @@ data_loader:
   name: "CIFAR10"
   corruption:
     brightness: 0.50
-    brightness_var: 0.1
+    brightness_var: 0.05
 device: "cuda:3"
 batch_size: 128
 tnet:
   transform_list: ["brightness"]
-  path: "tnet_models/br_050_dist/checkpoint_40.tar"
+  path: "tnet_models/br_050_dist/checkpoint_45.tar"
 pretrained_model:
   path: "pretrained_models/cifar_resize_randomcrop/checkpoint_17.tar"
 

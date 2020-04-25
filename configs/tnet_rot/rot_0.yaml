@@ -5,6 +5,7 @@ data_loader:
 device: "cuda:0"
 batch_size: 128
 tnet:
+  name: "vec"
   save_as: "runs/rot_0"
   save_dir: "tnet_models/rot_0"
   transform_list: ["rotation"]

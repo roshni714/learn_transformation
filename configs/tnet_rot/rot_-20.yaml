@@ -1,10 +1,11 @@
 data_loader:
   name: "CIFAR10"
   corruption:
-    degrees: [-20.001, -19.999]
+    degrees: -20.
 device: "cuda:0"
 batch_size: 128
 tnet:
+  name: "vec"
   save_as: "runs/rot_-20"
   save_dir: "tnet_models/rot_-20"
   transform_list: ["rotation"]

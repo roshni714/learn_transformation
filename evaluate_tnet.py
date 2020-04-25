@@ -9,6 +9,7 @@ import torchvision
 import torchvision.transforms as transforms
 import PIL
 import csv
+from data_loaders import CorruptDataset
 DEFAULT_CONFIG = "configs/tnet.yaml"
 
 def get_dataset(dataset_config):
@@ -17,35 +18,27 @@ def get_dataset(dataset_config):
 
     train_transform = transforms.Compose([transforms.ToTensor()]) 
     test_transform = []
-    for key in corruption:
-        if key == "color_jitter":
-            test_transform.append(transforms.ColorJitter(**corruption[key]))
-        if key == "rotation":
-            test_transform.append(transforms.Resize((36,36)))
-            test_transform.append(transforms.RandomRotation(**corruption[key]))
-            test_transform.append(transforms.CenterCrop((32, 32)))
-    test_transform.append(transforms.ToTensor())
 
     if dataset =="CIFAR10":
         trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform)
         testset = torchvision.datasets.CIFAR10(root='./data', train=False,
-                                       download=True, transform=transforms.Compose(test_transform))
+                                       download=True)
+
+        corrupt_testset = CorruptDataset(testset, corruption) 
+
         input_size = [3, 32, 32]
     elif dataset == "STL10":
 
         train_transform = transforms.Compose([transforms.Resize(size=224), transforms.ToTensor()]) 
         test_transform = [transforms.Resize(size=224)]
-        for key in corruption:
-            if key == "color_jitter":
-                test_transform.append(transforms.ColorJitter(**corruption[key]))
-            if key == "rotation":
-                test_transform.append(transforms.RandomRotation(**corruption[key]))
-        test_transform.append(transforms.ToTensor())
 
         trainset = torchvision.datasets.STL10(root='./data', split='train', download=True, transform= train_transform)
         testset = torchvision.datasets.STL10(root='./data', split='test', download=True, transform=transforms.Compose(test_transform))
+
+        corrupt_testset = CorruptDataset(testset, corruption)
         input_size = [3, 224, 224]
-    return trainset, testset, input_size
+    return trainset, corrupt_testset, input_size
+
 
 def main():
     parser = argparse.ArgumentParser(description="TransformNet Trainer")
@@ -68,7 +61,7 @@ def main():
     #Load Data and get image size
     _, test_data, input_size = get_dataset(config["data_loader"])
     batch_size = config["batch_size"]
-    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=True)
+    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False)
 
 
     #Pretrained Model Architecture
@@ -88,31 +81,43 @@ def main():
     pretrained_model.to(device)
 
     #Transform Net Architecture
-    num_channels = 3
-    model_name = "resnet18"
+    name = config["tnet"].get("name") 
     transform_list = config["tnet"]["transform_list"]
     num_classes = len(transform_list)
-    transform_net = network.get_model(name=model_name,
+    transform_net_path = config["tnet"]["path"]
+
+    if name == "vec":
+        transform_net_name = "vec"
+        transform_net= torch.load(transform_net_path)["state_dict"].to(device)
+    else:
+        num_channels = 3
+        transform_net_name = "resnet18"
+        transform_net = network.get_model(name=transform_net_name,
                               input_size=[3, 32, 32],
                               pretrained=True, 
                               num_channels=num_channels, 
                               num_classes=num_classes)
-    transform_net_path = config["tnet"]["path"]
-    transform_net= torch.load(transform_net_path)["state_dict"].to(device)
+        transform_net= torch.load(transform_net_path)["state_dict"].to(device)
 
 
-    evaluater = TransformNetEvaluater(transform_net, pretrained_model, test_loader, transform_list, device)
+    evaluater = TransformNetEvaluater(transform_net, transform_net_name, pretrained_model, test_loader, transform_list, device)
     dic = evaluater.evaluate()
 
-    corruption_param=float(config_file.split("_")[-1].split(".")[0])
-    print(corruption_param)
 
-    dic["corruption_param"] = corruption_param
-    name= "_".join(transform_list)
+    for i, tf in enumerate(transform_list):
+        dic["{}_param".format(tf)] = config["data_loader"]["corruption"][tf]
+
+    tf_name= "_".join(transform_list)
+
+    if transform_net_name != "vec":
+        name = "results_dist_"
+    else:
+        name = "results"
     
-    with open('results_dist_{}.csv'.format(name), 'a+', newline='') as csvfile:
-        field_names = ["corruption_param",  "pretrained_acc", "tnet_acc",  "transform_param", "transform_var"]
+    with open('{}_{}.csv'.format(name, tf_name), 'a+', newline='') as csvfile:
+        field_names = dic.keys()
         dict_writer = csv.DictWriter(csvfile, fieldnames=field_names)
+        dict_writer.writeheader()
         dict_writer.writerow(dic)
 
 

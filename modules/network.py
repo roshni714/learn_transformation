@@ -1,6 +1,7 @@
 import torch.nn as nn
 from torchvision import models
-from modules.resnet import ResNet18 
+from modules.resnet2 import ResNet18 
+from modules.net import Net
 
 def get_model(name, input_size, pretrained, num_channels, num_classes):
     """
@@ -14,13 +15,15 @@ def get_model(name, input_size, pretrained, num_channels, num_classes):
         num_channels- int number of channels
         num_classes- number of outputs of the network
     """
+    if "cnn"==name and input_size==[3, 32, 32]:
+        model = Net(num_classes)
     if "resnet18"==name and input_size==[3, 32, 32]:
         if num_channels == 1:
             model = ResNet18Grayscale(models.resnet.BasicBlock,
                                           [2, 2, 2, 2],
                                           num_classes)
         else:
-            model = ResNet18(num_classes=num_classes)
+            model = ResNet18(num_classes=num_classes, num_channels=num_channels)
     elif "resnet18"==name and input_size==[3, 224, 224]:
         function = getattr(models, name)
         model = function(pretrained=pretrained)

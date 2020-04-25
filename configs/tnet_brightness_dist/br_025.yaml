@@ -2,10 +2,11 @@ data_loader:
   name: "CIFAR10"
   corruption:
     brightness: 0.25
-    brightness_var: 0.1
+    brightness_var: 0.05
 device: "cuda:0"
 batch_size: 128
 tnet:
+  net: "cnn"
   save_as: "runs/br_025_dist"
   save_dir: "tnet_models/br_025_dist/"
   transform_list: ["brightness"]

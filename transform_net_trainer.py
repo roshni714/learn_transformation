@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 class TransformNetTrainer():
 
-    def __init__(self, transform_net, transform_list, pretrained_model, train_loader, test_loader, writer_name, device):
+    def __init__(self, transform_net, transform_net_name, transform_list, pretrained_model, train_loader, test_loader, writer_name, device):
         print("Setting up TransformNetTrainer")
 
         self.device = device
@@ -17,8 +17,12 @@ class TransformNetTrainer():
         self.train_loader = train_loader
         self.test_loader = test_loader
 
-#        self.optimizer = torch.optim.SGD([transform_net], lr=1e-1)
-        self.optimizer = torch.optim.Adam(self.transform_net.parameters(), lr=1e-3)
+        self.transform_net_name = transform_net_name
+
+        if self.transform_net_name == "vec": 
+            self.optimizer = torch.optim.SGD([transform_net], lr=1e-1)
+        else:
+            self.optimizer = torch.optim.Adam(self.transform_net.parameters(), lr=5e-3)
         names ='_'.join(transform_list)
 
         self.transform_list = transform_list
@@ -45,20 +49,13 @@ class TransformNetTrainer():
     def gradient_loss(self, img_batch):
         self.pretrained_model.eval()
         grads = []
-
-
         out = self.pretrained_model(img_batch)
         target = torch.argmax(out, dim=1)
         loss = F.nll_loss(out, target)
-        loss.backward()
-
-        for param in self.pretrained_model.parameters():
-            grads.append(param.grad.view(-1))
-        grads = torch.cat(grads)
-
-        grad_loss = -torch.mean(torch.abs(grads))
-
-        return grad_loss
+        grads = torch.autograd.grad(loss, self.pretrained_model.parameters(), create_graph=True)
+        print("shape of gradient: {}".format(grads.shape))
+        gradient_loss = -torch.mean(torch.abs(grads))
+        return gradient_loss
 
 
     def generate_train_embeddings(self):
@@ -99,47 +96,52 @@ class TransformNetTrainer():
         return dist
 
 
-    def msp_loss(self, test_example_batch):
+    def msp_loss(self, test_example_batch, original):
 
         self.pretrained_model.eval()
         softmax = torch.nn.Softmax()
-        batch_loss = -torch.mean(torch.max(softmax(self.pretrained_model(test_example_batch)), dim=1)[0])
+        batch_loss = -torch.mean(torch.max(softmax(self.pretrained_model(test_example_batch)), dim=1)[0] - torch.max(softmax(self.pretrained_model(original)), dim=1)[0])
         return batch_loss
 
 
-    def entropy_loss(self, test_example_batch):
+    def entropy_loss(self, test_example_batch, original):
 
         self.pretrained_model.eval()
         softmax = torch.nn.Softmax(dim=1)
         logsoftmax = torch.nn.LogSoftmax(dim=1)
         out = self.pretrained_model(test_example_batch)
         batch_loss = -torch.mean(torch.sum(softmax(out)* logsoftmax(out), dim=1))
+
         return batch_loss
 
 
     def train(self):
 
         self.pretrained_model.eval()
-        self.transform_net.train()
+
+        if self.transform_net_name != "vec":
+            self.transform_net.train()
 
         for i, sample in enumerate(self.test_loader):
             cur_iter = self.epoch*len(self.test_loader) + i
             img, label = sample
             img = img.float().to(self.device)
-            transform_out  = self.transform_net(img)
-            transformed_test_batch, mean_transform, var_transform = diff_tf.apply_transform_batch(img, transform_out, self.transform_list)
-            loss = self.entropy_loss(transformed_test_batch)
 
+            if self.transform_net_name== "vec":
+                transformed_test_batch, mean_transform, var_transform = diff_tf.apply_transform_batch(img, self.transform_net, self.transform_list)
+            else:
+                transform_out  = self.transform_net(img)
+                transformed_test_batch, mean_transform, var_transform = diff_tf.apply_transform_batch(img, transform_out, self.transform_list)
+            loss = self.gradient_loss(transformed_test_batch)
 
             self.optimizer.zero_grad()
             loss.backward()
-
             self.optimizer.step()
 
             self.writer.add_scalar('data/loss', loss.item(), cur_iter)
             for j, tf  in enumerate(self.transform_list):
-                self.writer.add_scalar('data/{}'.format(tf), mean_transform[j], cur_iter)
-                self.writer.add_scalar('data/{}_var'.format(tf), var_transform[j], cur_iter)
+                self.writer.add_scalar('data/{}'.format(tf), mean_transform[:, j], cur_iter)
+                self.writer.add_scalar('data/{}_var'.format(tf), var_transform[:, j], cur_iter)
 
                 self.writer.add_image('img/corrupted', img[0], cur_iter)
                 self.writer.add_image('img/transformed', transformed_test_batch[0], cur_iter)

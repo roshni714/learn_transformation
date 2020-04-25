@@ -5,6 +5,7 @@ data_loader:
 device: "cuda:0"
 batch_size: 128
 tnet:
+  name: "vec"
   save_as: "runs/br_050"
   save_dir: "tnet_models/br_050/"
   transform_list: ["brightness"]
