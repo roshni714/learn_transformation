@@ -14,7 +14,8 @@ DEFAULT_CONFIG = "configs/cifar_eval.yaml"
 
 def get_dataset(dataset_config):
     dataset = dataset_config["name"]
-    train_transform = transforms.ToTensor()
+    train_transform =transforms.Compose([transforms.ToTensor(), 
+                      transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))])
     if dataset =="CIFAR10":
         testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=train_transform)
         trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform)

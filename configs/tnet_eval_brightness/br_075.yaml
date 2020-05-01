@@ -5,8 +5,9 @@ data_loader:
 device: "cuda:3"
 batch_size: 128
 tnet:
+  name: "vec"
   transform_list: ["brightness"]
-  path: "tnet_models/br_075/checkpoint_10.tar"
+  path: "tnet_models/br_075/checkpoint_60.tar"
 pretrained_model:
-  path: "pretrained_models/cifar_resize_randomcrop/checkpoint_17.tar"
+  path: "pretrained_models/cifar_normalize/checkpoint_40.tar"
 

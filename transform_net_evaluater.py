@@ -38,7 +38,7 @@ class TransformNetEvaluater():
                 transform_params = self.transform_net
             new_img_batch, mean_transform, var_transform  = diff_tf.apply_transform_batch(img_batch_cuda, transform_params, self.transform_list)
             new_img_batch = new_img_batch.to(self.device)
-            mean_tf.append(mean_transform.detach().cpu().numpy().squeeze())
+            mean_tf.append(mean_transform.detach().cpu().numpy())
             out = torch.argmax(self.pretrained_model(new_img_batch), dim=1)
 
             correct += torch.sum(out == label_batch).item()
@@ -46,6 +46,7 @@ class TransformNetEvaluater():
             self.writer.add_image('img/transformed', new_img_batch[0], i)
 
         accuracy = correct/total
+        print(mean_tf)
         mean_tf = torch.mean(torch.Tensor(mean_tf), dim=0)
         print(mean_tf)
         dic = {}

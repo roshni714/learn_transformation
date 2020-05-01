@@ -12,6 +12,8 @@ import csv
 from data_loaders import CorruptDataset
 DEFAULT_CONFIG = "configs/tnet.yaml"
 
+keys = {"brightness": "brightness", "contrast": "contrast", "rotation":"degrees"}
+
 def get_dataset(dataset_config):
     dataset = dataset_config["name"]
     corruption = dataset_config["corruption"]
@@ -24,9 +26,21 @@ def get_dataset(dataset_config):
         testset = torchvision.datasets.CIFAR10(root='./data', train=False,
                                        download=True)
 
-        corrupt_testset = CorruptDataset(testset, corruption) 
+        corrupt_testset = CorruptDataset(testset, corruption, dataset) 
 
         input_size = [3, 32, 32]
+    elif dataset == "MNIST":
+       train_transform = transforms.Compose([transforms.ToTensor(),
+                                          transforms.Normalize((0.1307,),(0.3087,)) ])
+       input_size = [1, 28, 28]
+       trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=train_transform)
+       testset = torchvision.datasets.MNIST(root='./data', train=False,
+                                       download=True)
+
+       corrupt_testset = CorruptDataset(testset, corruption, dataset)
+
+
+
     elif dataset == "STL10":
 
         train_transform = transforms.Compose([transforms.Resize(size=224), transforms.ToTensor()]) 
@@ -35,7 +49,7 @@ def get_dataset(dataset_config):
         trainset = torchvision.datasets.STL10(root='./data', split='train', download=True, transform= train_transform)
         testset = torchvision.datasets.STL10(root='./data', split='test', download=True, transform=transforms.Compose(test_transform))
 
-        corrupt_testset = CorruptDataset(testset, corruption)
+        corrupt_testset = CorruptDataset(testset, corruption, dataset)
         input_size = [3, 224, 224]
     return trainset, corrupt_testset, input_size
 
@@ -65,8 +79,10 @@ def main():
 
 
     #Pretrained Model Architecture
-
-    num_channels = 3
+    if config["data_loader"]["name"] == "MNIST":
+        num_channels = 1
+    else:
+        num_channels = 3
     model_name = "resnet18"
     num_classes = 10
     pretrained_model = network.get_model(name=model_name,
@@ -105,7 +121,7 @@ def main():
 
 
     for i, tf in enumerate(transform_list):
-        dic["{}_param".format(tf)] = config["data_loader"]["corruption"][tf]
+        dic["{}_param".format(tf)] = config["data_loader"]["corruption"][keys[tf]]
 
     tf_name= "_".join(transform_list)
 

@@ -39,16 +39,15 @@ class Evaluater():
         self.device = device
         self.transform_list = transform_list
 
-        self.normalized_embeddings, self.trainset_labels, self.mean_embed, self.std_embed = self.generate_trainset_embeddings()
+#        self.normalized_embeddings, self.trainset_labels, self.mean_embed, self.std_embed = self.generate_trainset_embeddings()
 #        self.nearest_neighbors = self.generate_trainset_nearest_neighbors()
-        self.centroids = self.generate_trainset_centroids()
+#        self.centroids = self.generate_trainset_centroids()
 
 
     def generate_trainset_embeddings(self):
         #Generate embeddings of original train set
         tfs_original = transforms.Compose([transforms.ToPILImage(), 
-                   transforms.ToTensor(), 
-                   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+                   transforms.ToTensor()]) 
         
         original_embeddings = []
         labels = []
@@ -115,11 +114,12 @@ class Evaluater():
 
     def evaluate(self):
         print("Starting evaluation")
+        arr = []
         for transform in self.transform_list:
-            self.generate_plots_opt_tf_distribution(transform)
+            res = self.evaluate_over_transform(transform)
+            arr.append(res)
 
-
-
+        print(arr)
         print("Done with evaluation")
 
 
@@ -137,10 +137,9 @@ class Evaluater():
             if tf in name_to_extra_params:
                 for extra_key in name_to_extra_params[tf]:
                     dic[extra_key] = name_to_extra_params[tf][extra_key]
-            tfs = transforms.Compose([transforms.ToPILImage(), 
-                   name_to_transform[tf](**dic), 
-                   transforms.ToTensor(), 
-                   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+            tfs = transforms.Compose([transforms.ToPILImage(), transforms.Resize((36, 36), interpolation=0), 
+                   name_to_transform[tf](**dic), transforms.CenterCrop((32, 32)),
+                   transforms.ToTensor()]) 
             accuracy = 0.
             embedding_accuracy = 0.
             total = 0.
@@ -207,10 +206,9 @@ class Evaluater():
             if tf in name_to_extra_params:
                 for extra_key in name_to_extra_params[tf]:
                     dic[extra_key] = name_to_extra_params[tf][extra_key]
-            tfs = transforms.Compose([transforms.ToPILImage(), 
-                   name_to_transform[tf](**dic), 
-                   transforms.ToTensor(), 
-                   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+            tfs = transforms.Compose([transforms.ToPILImage(), transforms.Resize((36, 36), interpolation=0), 
+                   name_to_transform[tf](**dic), transforms.CenterCrop((32, 32)),
+                   transforms.ToTensor()]) 
             embedding_error = []
             for i, sample in enumerate(self.test_loader):
                 if i > 100:
@@ -238,16 +236,13 @@ class Evaluater():
         return {"x": list(points), "y": mean_embedding_distance, "std": std_embedding_distance, "name": tf}
 
     def get_opt_tf_distribution(self, tf):
-        print("Calculating embedding distance {}".format(tf))
+        print("Computing optimal tf dist {}".format(tf))
         #Calculate embedding distance with a sweep over different transformations
         min_max = name_to_range[tf]
         points = np.linspace(min_max[0], min_max[1], 15)
 
-        mean_embedding_distance = []
-        std_embedding_distance = []
 
         self.model.eval()
-        mse = torch.nn.MSELoss(reduction='sum')
         softmax = torch.nn.Softmax(dim=1)
 
         optimal_tf_dist= []
@@ -264,10 +259,10 @@ class Evaluater():
                     if tf in name_to_extra_params:
                         for extra_key in name_to_extra_params[tf]:
                             dic[extra_key] = name_to_extra_params[tf][extra_key]
-                    tfs = transforms.Compose([transforms.ToPILImage(), 
-                       name_to_transform[tf](**dic), 
-                       transforms.ToTensor(), 
-                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
+                    tfs = transforms.Compose([transforms.ToPILImage(), transforms.Resize((36, 36), interpolation=0), 
+                        name_to_transform[tf](**dic), transforms.CenterCrop((32, 32)),
+                        transforms.ToTensor()])
 
                     shifted_img = tfs(img).float().to(self.device).unsqueeze(dim=0)
                     last_layer = self.model(shifted_img)
@@ -294,7 +289,6 @@ class Evaluater():
         ax.set_ylabel("Count")
         ax.set_title("Distribution of Optimal {} Parameter".format(name))
         ax.hist(all_mins)
-        print(name)
         plt.savefig("figs/hist/{}/general.pdf".format(name))
         plt.close()
 
@@ -302,13 +296,13 @@ class Evaluater():
 
         for i in range(10):
             ax = f.add_subplot(5, 2, i+1)
-            class_mins =[ opt_tf for label, opt_tf in  list(filter(lambda x: x[0] !=i, opt_tf_dist))]
+            class_mins =[ opt_tf for label, opt_tf in  list(filter(lambda x: x[0] ==i, opt_tf_dist))]
             ax.set_xlabel("{} Parameter".format(name))
             ax.set_ylabel("Count")
             ax.set_title("Class {}".format(i))
             ax.hist(class_mins)
         plt.title("Distribution of Optimal {} Parameter".format(name))
-        plt.savefig("figs/hist/{}/class_specific.pdf")
+        plt.savefig("figs/hist/{}/class_specific.pdf".format(name))
         plt.close()
 
     def generate_tsne_plot_over_transform(self, tf=None):
@@ -322,8 +316,7 @@ class Evaluater():
         if not tf:
             name = "original"
             tfs = transforms.Compose([transforms.ToPILImage(), 
-                   transforms.ToTensor(), 
-                   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+                   transforms.ToTensor()]) 
 
         else:
             name = tf
@@ -331,8 +324,7 @@ class Evaluater():
             key = {name_to_arg[tf]: [point - 0.001, point + 0.001]}
             tfs = transforms.Compose([transforms.ToPILImage(), 
                    name_to_transform[tf](**key), 
-                   transforms.ToTensor(), 
-                   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+                   transforms.ToTensor()]) 
 
         print("Generating TSNE plot {}".format(name))
 
@@ -371,15 +363,13 @@ class Evaluater():
             return color_map
         
         tfs_original = transforms.Compose([transforms.ToPILImage(), 
-                   transforms.ToTensor(), 
-                   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+                   transforms.ToTensor()])
 
         point = name_to_extreme[tf]
         key = {name_to_arg[tf]: [point - 0.001, point + 0.001]}
         tfs = transforms.Compose([transforms.ToPILImage(), 
                    name_to_transform[tf](**key), 
-                   transforms.ToTensor(), 
-                   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+                   transforms.ToTensor()]) 
 
         print("Generating TSNE comparsion plot {}".format(tf))
 
@@ -428,10 +418,9 @@ class Evaluater():
             if tf in name_to_extra_params:
                 for extra_key in name_to_extra_params[tf]:
                     dic[extra_key] = name_to_extra_params[tf][extra_key]
-            tfs = transforms.Compose([transforms.ToPILImage(), 
-                   name_to_transform[tf](**dic), 
-                   transforms.ToTensor(), 
-                   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+            tfs = transforms.Compose([transforms.ToPILImage(), transforms.Resize((36, 36), interpolation=0), 
+                  name_to_transform[tf](**dic), transforms.CenterCrop((32, 32)),
+                  transforms.ToTensor()])
             accuracy = 0.
             total = 0.
             for i, sample in enumerate(self.test_loader):
@@ -448,7 +437,7 @@ class Evaluater():
             print(accuracy)
             accuracies.append(accuracy)
 
-        return {"x": points, "y": accuracies, "tf": tf} 
+        return {"x": list(points), "y": accuracies, "tf": tf} 
                 
 
 

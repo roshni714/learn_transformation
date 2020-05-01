@@ -16,7 +16,7 @@ def get_dataset(dataset_config):
     dataset = dataset_config["name"]
     corruption = dataset_config["corruption"]
 
-    train_transform = transforms.Compose([transforms.ColorJitter(brightness=[0.15, 1.15]), transforms.ToTensor()]) 
+    train_transform = transforms.Compose([transforms.ToTensor(),                                           transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))]) 
     test_transform = []
 
     if dataset =="CIFAR10":
@@ -24,14 +24,24 @@ def get_dataset(dataset_config):
         testset = torchvision.datasets.CIFAR10(root='./data', train=False,
                                        download=True)
 
-        corrupt_testset = CorruptDataset(testset, corruption)
-
-#        few_shot_testset = get_few_shot_dataset(corrupt_testset, 1)
+        corrupt_testset = CorruptDataset(testset, corruption, dataset)
 
         input_size = [3, 32, 32]
+    elif dataset == "MNIST":
+       train_transform = transforms.Compose([transforms.ToTensor(),
+                                          transforms.Normalize((0.1307,),(0.3087,)) ])
+       input_size = [1, 28, 28]
+       trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=train_transform)
+       testset = torchvision.datasets.MNIST(root='./data', train=False,
+                                       download=True)
+
+       corrupt_testset = CorruptDataset(testset, corruption, dataset)
+
+
+
     elif dataset == "STL10":
 
-        train_transform = transforms.Compose([transforms.Resize(size=224), transforms.ColorJitter(brightness=[0.15, 1.15]), transforms.ToTensor()]) 
+        train_transform = transforms.Compose([transforms.Resize(size=224), transforms.ToTensor()]) 
         test_transform = [transforms.Resize(size=224)]
 
         trainset = torchvision.datasets.STL10(root='./data', split='train', download=True, transform= train_transform)
@@ -71,8 +81,10 @@ def main():
 
 
     #Pretrained Model Architecture
-
-    num_channels = 3
+    if config["data_loader"]["name"] == "MNIST":
+        num_channels = 1
+    else:
+        num_channels = 3
     model_name = "resnet18"
     num_classes = 10
     pretrained_model = network.get_model(name=model_name,
@@ -93,7 +105,14 @@ def main():
     transform_net_name = "resnet18"
     if config["tnet"].get("name") == "vec":
         transform_net_name = "vec"
-        transform_net = torch.zeros(1, num_classes).to(device).requires_grad_(True)
+
+        initial_params = []
+        for tf in transform_list:
+            if tf == "rotation":
+                initial_params.append(0)
+            else:
+                initial_params.append(1)
+        transform_net = torch.Tensor([initial_params]).to(device).requires_grad_(True)
     else:
         num_channels = 3
         transform_net = network.get_model(name=transform_net_name,

@@ -1,0 +1,16 @@
+data_loader:
+  name: "CIFAR10"
+  corruption:
+    contrast: 0.75
+    contrast_var: 0.05
+device: "cuda:0"
+batch_size: 128
+tnet:
+  name: "cnn"
+  save_as: "runs/c_075_dist"
+  save_dir: "tnet_models/c_075_dist/"
+  transform_list: ["contrast"]
+  batch_size: 128
+pretrained_model:
+  path: "pretrained_models/cifar_normalize/checkpoint_40.tar"
+

@@ -1,0 +1,5 @@
+data_loader:
+  name: "MNIST"
+save_dir: "pretrained_models/mnist_normalize"
+device: "cuda:3"
+batch_size: 128

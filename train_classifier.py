@@ -16,9 +16,15 @@ def get_dataset(dataset_config):
     if dataset =="CIFAR10":
        train_transform = transforms.Compose([transforms.RandomHorizontalFlip(),
                                           transforms.RandomCrop(32, padding=4),
-                                          transforms.ToTensor()])
+                                          transforms.ToTensor(),
+                                          transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))])
        input_size = [3, 32,32]
        trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform)
+    elif dataset == "MNIST":
+       train_transform = transforms.Compose([transforms.ToTensor(),
+                                          transforms.Normalize((0.1307,),(0.3087,)) ])
+       trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=train_transform)
+       input_size = [1, 28, 28]
     elif dataset == "STL10":
        train_transform = transforms.Compose([transforms.Resize(size=224),
                                           transforms.RandomHorizontalFlip(),
@@ -55,8 +61,10 @@ def main():
     train_data, val_data, input_size = get_dataset(config["data_loader"])
 
     #Pretrained Model Architecture
-
-    num_channels = 3
+    if config["data_loader"]["name"] =="MNIST":
+        num_channels = 1
+    else:
+        num_channels = 3
     model_name = "resnet18"
     num_classes = 10
     model = network.get_model(name=model_name,

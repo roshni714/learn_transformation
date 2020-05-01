@@ -15,10 +15,11 @@ def get_model(name, input_size, pretrained, num_channels, num_classes):
         num_channels- int number of channels
         num_classes- number of outputs of the network
     """
-    if "cnn"==name and input_size==[3, 32, 32]:
+    if "cnn"==name and input_sizw != [3, 224, 224]:
         model = Net(num_classes)
-    if "resnet18"==name and input_size==[3, 32, 32]:
+    if "resnet18"==name and input_size!=[3, 224, 224]:
         if num_channels == 1:
+            print("hello")
             model = ResNet18Grayscale(models.resnet.BasicBlock,
                                           [2, 2, 2, 2],
                                           num_classes)

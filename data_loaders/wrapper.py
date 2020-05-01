@@ -6,10 +6,10 @@ import torchvision.transforms as transforms
 
 class CorruptDataset(Dataset):
 
-    def __init__(self, dataset, corruption):
+    def __init__(self, dataset, corruption, name):
         self.dataset = dataset
         rs = np.random.RandomState(0)
-       
+        self.name = name 
         self.params = {}
         n = len(self.dataset)
         for key in corruption:
@@ -23,8 +23,14 @@ class CorruptDataset(Dataset):
         for key in self.params:
             tf_dic[key] = self.params[key][idx]
 
-        tf = transforms.Compose([corrupt_tf.Corruption(**tf_dic), transforms.ToTensor()])
         img, label  = self.dataset[idx]
+
+        if self.name != "MNIST":
+            tf = transforms.Compose([corrupt_tf.Corruption(**tf_dic), transforms.ToTensor(),
+                                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))])
+        else:
+            tf = transforms.Compose([corrupt_tf.Corruption(**tf_dic), transforms.ToTensor(),
+                                     transforms.Normalize((0.1307,),(0.3087,))]) 
 
         return tf(img), label
 

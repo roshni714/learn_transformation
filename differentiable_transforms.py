@@ -27,7 +27,7 @@ def apply_transform_batch(img_batch, transform_out, transform_list):
             if name == "brightness":
                 act = softplus(transform_out[:, j])
             if name == "rotation":
-                act = 30 * torch.sin(transform_out[:, j])
+                act = 180* torch.sin(transform_out[:, j])
             if name == "hue":
                 act = 0.5*tanh(transform_out[:, j])
 

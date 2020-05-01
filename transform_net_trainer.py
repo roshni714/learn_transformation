@@ -4,7 +4,7 @@ from datetime import datetime
 import differentiable_transforms as diff_tf
 import torchvision.models.vgg as models
 import torch.nn.functional as F 
-
+from operations import render_img
 
 class TransformNetTrainer():
 
@@ -20,9 +20,9 @@ class TransformNetTrainer():
         self.transform_net_name = transform_net_name
 
         if self.transform_net_name == "vec": 
-            self.optimizer = torch.optim.SGD([transform_net], lr=1e-1)
+            self.optimizer = torch.optim.SGD([transform_net], lr=3e-2)
         else:
-            self.optimizer = torch.optim.Adam(self.transform_net.parameters(), lr=5e-3)
+            self.optimizer = torch.optim.Adam(self.transform_net.parameters(), lr=1e-6)
         names ='_'.join(transform_list)
 
         self.transform_list = transform_list
@@ -48,14 +48,20 @@ class TransformNetTrainer():
 
     def gradient_loss(self, img_batch):
         self.pretrained_model.eval()
+        self.pretrained_model.zero_grad()
         grads = []
         out = self.pretrained_model(img_batch)
         target = torch.argmax(out, dim=1)
         loss = F.nll_loss(out, target)
-        grads = torch.autograd.grad(loss, self.pretrained_model.parameters(), create_graph=True)
-        print("shape of gradient: {}".format(grads.shape))
-        gradient_loss = -torch.mean(torch.abs(grads))
-        return gradient_loss
+        loss.backward(create_graph=True)
+
+        for param in self.pretrained_model.parameters():
+            grads.append(param.grad.view(-1))
+
+        grads = torch.cat(grads)
+
+        gradient_loss = torch.mean(torch.abs(grads))
+        return gradient_loss * 100
 
 
     def generate_train_embeddings(self):
@@ -103,7 +109,6 @@ class TransformNetTrainer():
         batch_loss = -torch.mean(torch.max(softmax(self.pretrained_model(test_example_batch)), dim=1)[0] - torch.max(softmax(self.pretrained_model(original)), dim=1)[0])
         return batch_loss
 
-
     def entropy_loss(self, test_example_batch, original):
 
         self.pretrained_model.eval()
@@ -113,7 +118,6 @@ class TransformNetTrainer():
         batch_loss = -torch.mean(torch.sum(softmax(out)* logsoftmax(out), dim=1))
 
         return batch_loss
-
 
     def train(self):
 
@@ -132,7 +136,11 @@ class TransformNetTrainer():
             else:
                 transform_out  = self.transform_net(img)
                 transformed_test_batch, mean_transform, var_transform = diff_tf.apply_transform_batch(img, transform_out, self.transform_list)
-            loss = self.gradient_loss(transformed_test_batch)
+
+            loss = self.msp_loss(transformed_test_batch, img)
+            for j, tf in enumerate(self.transform_list):
+                if var_transform[:, j] > 0.1:
+                    loss += var_transform[:, j].squeeze()
 
             self.optimizer.zero_grad()
             loss.backward()
@@ -143,8 +151,8 @@ class TransformNetTrainer():
                 self.writer.add_scalar('data/{}'.format(tf), mean_transform[:, j], cur_iter)
                 self.writer.add_scalar('data/{}_var'.format(tf), var_transform[:, j], cur_iter)
 
-                self.writer.add_image('img/corrupted', img[0], cur_iter)
-                self.writer.add_image('img/transformed', transformed_test_batch[0], cur_iter)
+                self.writer.add_image('img/corrupted', render_img(img[0]), cur_iter)
+                self.writer.add_image('img/transformed', render_img(transformed_test_batch[0]), cur_iter)
             print("Epoch: [{0}][{1}/{2}]\t Loss {3}".format(self.epoch, i, len(self.test_loader), round(loss.item(), 4)))
         self.epoch += 1
 

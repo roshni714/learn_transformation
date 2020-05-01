@@ -1,6 +1,32 @@
 import torch
 import torchgeometry as tgm
 import kornia
+from torchvision import transforms
+
+def render_img(img):
+    if img.get_device() >= 0:
+        new_img = torch.ones(img.shape).to(img.get_device())
+    else:
+        new_img = torch.ones(img.shape)
+
+    if img.shape[0] == 3:
+        mean = (0.4914, 0.4822, 0.4465)
+        var = (0.247, 0.243, 0.261)
+
+        for i in range(3):
+            new_img[i, :, :] = mean[i] + img[i, :, :] * var[i]
+    else:
+        mean = (0.1307,)
+        var = (0.3087,)
+
+        new_img[0, :, :] = mean[0] + img[0, :, :] * var[0]
+
+    return new_img
+
+def normalize_img(img):
+    normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))
+    new_img = normalize(img)
+    return new_img
 
 def adjust_saturation(img, sat):
 
@@ -19,13 +45,14 @@ def adjust_saturation(img, sat):
     new_img = copy_p + (img - copy_p) * sat
     return new_img
 
+
+
 def adjust_contrast(img, contrast):
     gray = kornia.rgb_to_grayscale(img)
     if img.get_device() >= 0:
         gray_img = torch.ones(img.shape).to(img.get_device()) * gray.mean()
     else:
         gray_img = torch.ones(img.shape) * gray.mean()
-
     new_img = gray_img * (1- contrast) + img * contrast
     return new_img
 
@@ -43,10 +70,13 @@ def adjust_brightness(img, factor):
     else:
         black_img = torch.zeros(img.shape)
 
-    new_img = black_img * (1 - factor) + img * factor
-    return torch.clamp(new_img, 0, 1)
+    scaled_img = render_img(img)
+    tf_img = torch.clamp(black_img * (1 - factor) + scaled_img * factor, 0, 1)
+    new_img = normalize_img(tf_img)
+    return new_img
 
 def adjust_rotation(img, rotation):
+
     img = img.unsqueeze(dim=0)
     angle = torch.ones(1).to(img.get_device()) * rotation
     # define the rotation center

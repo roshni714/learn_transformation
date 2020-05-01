@@ -13,8 +13,8 @@ class Trainer():
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
 
         timestamp = datetime.timestamp(datetime.now())
-        self.train_writer= SummaryWriter("runs/{}/train".format("cifar"))
-        self.val_writer= SummaryWriter("runs/{}/val".format("cifar"))
+        self.train_writer= SummaryWriter("runs/{}/train".format("mnist"))
+        self.val_writer= SummaryWriter("runs/{}/val".format("mnist"))
 
         self.epoch = 0
 

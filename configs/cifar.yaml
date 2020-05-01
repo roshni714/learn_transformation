@@ -1,5 +1,5 @@
 data_loader:
   name: "CIFAR10"
-save_dir: "pretrained_models/cifar_3/checkpoint_17.tar"
+save_dir: "pretrained_models/cifar_normalize"
 device: "cuda:0"
 batch_size: 32

@@ -1,0 +1,12 @@
+data_loader:
+  name: "MNIST"
+  corruption:
+    degrees: 100.
+device: "cuda:3"
+batch_size: 128
+tnet:
+  name: "vec"
+  transform_list: ["rotation"]
+  path: "tnet_models/rot_100/checkpoint_60.tar"
+pretrained_model:
+  path: "pretrained_models/mnist_normalize/checkpoint_10.tar"
