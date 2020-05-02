@@ -138,7 +138,6 @@ class TransformNetTrainer():
                 transformed_test_batch, mean_transform, var_transform = diff_tf.apply_transform_batch(img, transform_out, self.transform_list)
 
             loss = self.msp_loss(transformed_test_batch, img)
-
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
