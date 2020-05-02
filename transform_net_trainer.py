@@ -22,7 +22,7 @@ class TransformNetTrainer():
         if self.transform_net_name == "vec": 
             self.optimizer = torch.optim.SGD([transform_net], lr=3e-2)
         else:
-            self.optimizer = torch.optim.Adam(self.transform_net.parameters(), lr=1e-6)
+            self.optimizer = torch.optim.Adam(self.transform_net.parameters(), lr=5e-5)
         names ='_'.join(transform_list)
 
         self.transform_list = transform_list
@@ -138,9 +138,6 @@ class TransformNetTrainer():
                 transformed_test_batch, mean_transform, var_transform = diff_tf.apply_transform_batch(img, transform_out, self.transform_list)
 
             loss = self.msp_loss(transformed_test_batch, img)
-            for j, tf in enumerate(self.transform_list):
-                if var_transform[:, j] > 0.1:
-                    loss += var_transform[:, j].squeeze()
 
             self.optimizer.zero_grad()
             loss.backward()

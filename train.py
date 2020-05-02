@@ -102,24 +102,41 @@ def main():
     transform_list = config["tnet"]["transform_list"]
     num_classes = len(transform_list)
     num_epochs = 60
-    transform_net_name = "resnet18"
+    initial_params = []
+    for tf in transform_list:
+        if tf == "rotation":
+            initial_params.append(0)
+        else:
+            initial_params.append(1)
+
     if config["tnet"].get("name") == "vec":
         transform_net_name = "vec"
 
-        initial_params = []
-        for tf in transform_list:
-            if tf == "rotation":
-                initial_params.append(0)
-            else:
-                initial_params.append(1)
         transform_net = torch.Tensor([initial_params]).to(device).requires_grad_(True)
-    else:
-        num_channels = 3
-        transform_net = network.get_model(name=transform_net_name,
+    elif config["tnet"]["name"] == "resnet18":
+        transform_net_name = "resnet18"
+        transform_net = network.get_model(name="resnet18",
                               input_size=[3, 32, 32],
-                              pretrained=True, 
+                              pretrained=False, 
                               num_channels=num_channels, 
                               num_classes=num_classes).to(device)
+
+        weight_dict = transform_net.state_dict()
+        new_weight_dict = {"linear.bias": torch.Tensor(initial_params)}
+        weight_dict.update(new_weight_dict)
+        transform_net.load_state_dict(weight_dict)
+    else:
+        transform_net_name = "cnn"
+        transform_net = network.get_model(name="cnn",
+                              input_size=[3, 32, 32],
+                              pretrained=False, 
+                              num_channels=num_channels, 
+                              num_classes=num_classes).to(device)
+
+        weight_dict = transform_net.state_dict()
+        new_weight_dict = {"fc3.bias": torch.Tensor(initial_params)}
+        weight_dict.update(new_weight_dict)
+        transform_net.load_state_dict(weight_dict)
 
     writer_name = config["tnet"]["save_as"]
     trainer = TransformNetTrainer(transform_net, transform_net_name, transform_list, pretrained_model, train_loader, test_loader, writer_name,  device)

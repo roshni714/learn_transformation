@@ -2,7 +2,7 @@ data_loader:
   name: "CIFAR10"
   corruption:
     contrast: 1.
-    var: 0.1
+    contrast_var: 0.1
 device: "cuda:0"
 batch_size: 128
 tnet:

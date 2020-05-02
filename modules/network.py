@@ -15,7 +15,8 @@ def get_model(name, input_size, pretrained, num_channels, num_classes):
         num_channels- int number of channels
         num_classes- number of outputs of the network
     """
-    if "cnn"==name and input_sizw != [3, 224, 224]:
+    if "cnn"==name and input_size != [3, 224, 224]:
+        print("CNN")
         model = Net(num_classes)
     if "resnet18"==name and input_size!=[3, 224, 224]:
         if num_channels == 1:
