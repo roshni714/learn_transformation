@@ -105,7 +105,8 @@ class TransformNetTrainer():
 
         self.pretrained_model.eval()
         softmax = torch.nn.Softmax()
-        batch_loss = -torch.mean(torch.max(softmax(self.pretrained_model(test_example_batch)), dim=1)[0] - torch.max(softmax(self.pretrained_model(original)), dim=1)[0])
+        T = 10
+        batch_loss = -torch.mean(torch.max(softmax(self.pretrained_model(test_example_batch)/T), dim=1)[0] - torch.max(softmax(self.pretrained_model(original)/T), dim=1)[0])
         return batch_loss
 
     def entropy_loss(self, test_example_batch, original):

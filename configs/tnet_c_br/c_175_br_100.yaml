@@ -8,8 +8,8 @@ batch_size: 128
 tnet:
   epochs: 80
   name: "vec"
-  save_as: "runs/c_175_br_100"
-  save_dir: "tnet_models/c_175_br_100/"
+  save_as: "runs/t_10/c_175_br_100"
+  save_dir: "tnet_models/t_10/c_175_br_100/"
   transform_list: ["contrast", "brightness"]
   batch_size: 128
 pretrained_model:
