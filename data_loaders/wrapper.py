@@ -12,6 +12,10 @@ class CorruptDataset(Dataset):
         self.name = name 
         self.params = {}
         n = len(self.dataset)
+        self.mode = corruption.get("mode", "test")
+        if "mode" in corruption:
+            del corruption["mode"]
+
         for key in corruption:
             if not key.endswith("_var"):
                self.params[key] = rs.normal(corruption[key], corruption.get("{}_var".format(key), 0.), n)
@@ -25,12 +29,23 @@ class CorruptDataset(Dataset):
 
         img, label  = self.dataset[idx]
 
-        if self.name != "MNIST":
-            tf = transforms.Compose([corrupt_tf.Corruption(**tf_dic), transforms.ToTensor(),
-                                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))])
+        if self.mode == "test":
+            if self.name != "MNIST":
+                tf = transforms.Compose([corrupt_tf.Corruption(**tf_dic), transforms.ToTensor(),
+                                    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))])
+            else:
+                tf = transforms.Compose([corrupt_tf.Corruption(**tf_dic), transforms.ToTensor(),
+                                         transforms.Normalize((0.1307,),(0.3087,))]) 
         else:
-            tf = transforms.Compose([corrupt_tf.Corruption(**tf_dic), transforms.ToTensor(),
-                                     transforms.Normalize((0.1307,),(0.3087,))]) 
+            if self.name != "MNIST":
+                tf = transforms.Compose([transforms.RandomHorizontalFlip(),
+                                         transforms.RandomCrop(32, padding=4),
+                                         corrupt_tf.Corruption(**tf_dic), transforms.ToTensor(),
+                                         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))])
+            else:
+                tf = transforms.Compose([corrupt_tf.Corruption(**tf_dic), transforms.ToTensor(),
+                                         transforms.Normalize((0.1307,),(0.3087,))]) 
+ 
 
         return tf(img), label
 

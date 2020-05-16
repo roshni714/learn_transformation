@@ -8,13 +8,12 @@ from operations import render_img
 
 class TransformNetTrainer():
 
-    def __init__(self, transform_net, transform_net_name, transform_list, pretrained_model, train_loader, test_loader, writer_name, device):
+    def __init__(self, transform_net, transform_net_name, transform_list, pretrained_model, test_loader, writer_name, device):
         print("Setting up TransformNetTrainer")
 
         self.device = device
         self.transform_net = transform_net
         self.pretrained_model = pretrained_model
-        self.train_loader = train_loader
         self.test_loader = test_loader
 
         self.transform_net_name = transform_net_name

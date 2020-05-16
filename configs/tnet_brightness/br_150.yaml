@@ -12,4 +12,3 @@ tnet:
   batch_size: 128
 pretrained_model:
   path: "pretrained_models/cifar_normalize/checkpoint_40.tar"
-

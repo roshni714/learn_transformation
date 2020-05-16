@@ -11,47 +11,39 @@ import PIL
 import csv
 from data_loaders import CorruptDataset
 DEFAULT_CONFIG = "configs/tnet.yaml"
+import numpy as np
 
+np.random.seed(0)
 keys = {"brightness": "brightness", "contrast": "contrast", "rotation":"degrees"}
 
 def get_dataset(dataset_config):
     dataset = dataset_config["name"]
     corruption = dataset_config["corruption"]
-
-    train_transform = transforms.Compose([transforms.ToTensor()]) 
-    test_transform = []
+    shuffled_indices = list(range(10000))
+    np.random.shuffle(shuffled_indices)
+    tnet_indices = shuffled_indices[7000:]
 
     if dataset =="CIFAR10":
-        trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform)
         testset = torchvision.datasets.CIFAR10(root='./data', train=False,
                                        download=True)
+        new_testset = []
+        for i in tnet_indices:
+            new_testset.append(testset[i])
 
-        corrupt_testset = CorruptDataset(testset, corruption, dataset) 
+        corrupt_testset = CorruptDataset(new_testset, corruption, dataset) 
 
         input_size = [3, 32, 32]
     elif dataset == "MNIST":
-       train_transform = transforms.Compose([transforms.ToTensor(),
-                                          transforms.Normalize((0.1307,),(0.3087,)) ])
        input_size = [1, 28, 28]
-       trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=train_transform)
        testset = torchvision.datasets.MNIST(root='./data', train=False,
                                        download=True)
+       new_testset = []
+       for i in tnet_indices:
+           new_testset.append(testset[i])
 
-       corrupt_testset = CorruptDataset(testset, corruption, dataset)
+       corrupt_testset = CorruptDataset(new_testset, corruption, dataset)
 
-
-
-    elif dataset == "STL10":
-
-        train_transform = transforms.Compose([transforms.Resize(size=224), transforms.ToTensor()]) 
-        test_transform = [transforms.Resize(size=224)]
-
-        trainset = torchvision.datasets.STL10(root='./data', split='train', download=True, transform= train_transform)
-        testset = torchvision.datasets.STL10(root='./data', split='test', download=True, transform=transforms.Compose(test_transform))
-
-        corrupt_testset = CorruptDataset(testset, corruption, dataset)
-        input_size = [3, 224, 224]
-    return trainset, corrupt_testset, input_size
+    return corrupt_testset, input_size
 
 
 def main():
@@ -73,7 +65,7 @@ def main():
 
 
     #Load Data and get image size
-    _, test_data, input_size = get_dataset(config["data_loader"])
+    test_data, input_size = get_dataset(config["data_loader"])
     batch_size = config["batch_size"]
     test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False)
 
@@ -90,10 +82,8 @@ def main():
                               pretrained=False, 
                               num_channels=num_channels, 
                               num_classes=num_classes)
-    pretrained_model_path = config["pretrained_model"]["path"]
-    checkpoint = torch.load(pretrained_model_path)
-
-    pretrained_model.load_state_dict(checkpoint["state_dict"])
+    original_model_path = config["pretrained_model"]["path"]
+    oracle_model_path = config["oracle_model"]["path"]
     pretrained_model.to(device)
 
     #Transform Net Architecture
@@ -116,12 +106,12 @@ def main():
         transform_net= torch.load(transform_net_path)["state_dict"].to(device)
 
 
-    evaluater = TransformNetEvaluater(transform_net, transform_net_name, pretrained_model, test_loader, transform_list, device)
-    dic = evaluater.evaluate()
+    evaluater = TransformNetEvaluater(transform_net, transform_net_name, pretrained_model, original_model_path, oracle_model_path, test_loader, transform_list, device)
+    rows = evaluater.evaluate()
 
-
-    for i, tf in enumerate(transform_list):
-        dic["{}_param".format(tf)] = config["data_loader"]["corruption"][keys[tf]]
+    for row in rows:
+        for i, tf in enumerate(transform_list):
+            row["{}_param".format(tf)] = config["data_loader"]["corruption"][keys[tf]]
 
     tf_name= "_".join(transform_list)
 
@@ -131,10 +121,12 @@ def main():
         name = "results"
     
     with open('{}_{}.csv'.format(name, tf_name), 'a+', newline='') as csvfile:
-        field_names = dic.keys()
+        field_names = rows[0].keys()
         dict_writer = csv.DictWriter(csvfile, fieldnames=field_names)
-        dict_writer.writeheader()
-        dict_writer.writerow(dic)
+        if os.path.getsize('{}_{}.csv'.format(name, tf_name)) == 0:
+            dict_writer.writeheader()
+        for row in rows:
+            dict_writer.writerow(row)
 
 
 

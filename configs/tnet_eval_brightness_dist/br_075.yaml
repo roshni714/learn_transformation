@@ -10,5 +10,5 @@ tnet:
   transform_list: ["brightness"]
   path: "tnet_models/br_075_dist/checkpoint_60.tar"
 pretrained_model:
-  path: "pretrained_models/cifar_resize_randomcrop/checkpoint_17.tar"
+  path: "pretrained_models/cifar_normalize/checkpoint_40.tar"
 

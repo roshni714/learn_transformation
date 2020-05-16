@@ -1,0 +1,10 @@
+data_loader:
+  name: "CIFAR10"
+  corruption:
+    brightness: 0.25
+device: "cuda:3"
+batch_size: 128
+tl_model:
+  transform_list: ["brightness"]
+  path: "tl_models/br_025"
+

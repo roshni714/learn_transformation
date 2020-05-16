@@ -6,7 +6,7 @@ data_loader:
 device: "cuda:0"
 batch_size: 128
 tnet:
-  net: "cnn"
+  name: "cnn"
   save_as: "runs/br_025_dist"
   save_dir: "tnet_models/br_025_dist/"
   transform_list: ["brightness"]

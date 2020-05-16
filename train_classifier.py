@@ -8,18 +8,26 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data.dataset import random_split
 from classification_model_trainer import Trainer
+from data_loaders import CorruptDataset
 
 DEFAULT_CONFIG = "configs/cifar.yaml"
 
 def get_dataset(dataset_config):
     dataset = dataset_config["name"]
+    corruption = dataset_config.get("corruption")
     if dataset =="CIFAR10":
-       train_transform = transforms.Compose([transforms.RandomHorizontalFlip(),
+        input_size = [3, 32,32]
+
+        if not corruption:
+            train_transform = transforms.Compose([transforms.RandomHorizontalFlip(),
                                           transforms.RandomCrop(32, padding=4),
                                           transforms.ToTensor(),
                                           transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))])
-       input_size = [3, 32,32]
-       trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform)
+            trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform)
+        else:
+            trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True)
+            trainset = CorruptDataset(trainset, corruption, dataset)
+
     elif dataset == "MNIST":
        train_transform = transforms.Compose([transforms.ToTensor(),
                                           transforms.Normalize((0.1307,),(0.3087,)) ])
@@ -82,7 +90,7 @@ def main():
 
     num_epochs = 40
 
-    trainer = Trainer(model, train_loader, val_loader, device)
+    trainer = Trainer(model, train_loader, val_loader, config["save_as"], device)
 
     torch.autograd.set_detect_anomaly(True)
     for epoch in range(num_epochs):

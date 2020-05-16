@@ -10,46 +10,42 @@ import torchvision.transforms as transforms
 import PIL
 from data_loaders import CorruptDataset, get_few_shot_dataset
 from temperature_scaling import ModelWithTemperature
+import numpy as np
 DEFAULT_CONFIG = "configs/tnet.yaml"
+
+np.random.seed(0)
 
 def get_dataset(dataset_config):
     dataset = dataset_config["name"]
     corruption = dataset_config["corruption"]
-
-    train_transform = transforms.Compose([transforms.ToTensor(),                                           transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))]) 
-    test_transform = []
+    shuffled_indices = list(range(10000))
+    np.random.shuffle(shuffled_indices)
+    tnet_indices = shuffled_indices[:7000]
+    print(tnet_indices[:10])
 
     if dataset =="CIFAR10":
-        trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform)
         testset = torchvision.datasets.CIFAR10(root='./data', train=False,
                                        download=True)
+        new_testset = []
+        for i in tnet_indices:
+            new_testset.append(testset[i])
 
-        corrupt_testset = CorruptDataset(testset, corruption, dataset)
+        corrupt_testset = CorruptDataset(new_testset, corruption, dataset)
 
         input_size = [3, 32, 32]
     elif dataset == "MNIST":
-       train_transform = transforms.Compose([transforms.ToTensor(),
-                                          transforms.Normalize((0.1307,),(0.3087,)) ])
        input_size = [1, 28, 28]
-       trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=train_transform)
        testset = torchvision.datasets.MNIST(root='./data', train=False,
                                        download=True)
 
-       corrupt_testset = CorruptDataset(testset, corruption, dataset)
+       new_testset = []
+       for i in tnet_indices:
+           new_testset.append(testset[i])
+
+       corrupt_testset = CorruptDataset(new_testset, corruption, dataset)
 
 
-
-    elif dataset == "STL10":
-
-        train_transform = transforms.Compose([transforms.Resize(size=224), transforms.ToTensor()]) 
-        test_transform = [transforms.Resize(size=224)]
-
-        trainset = torchvision.datasets.STL10(root='./data', split='train', download=True, transform= train_transform)
-        testset = torchvision.datasets.STL10(root='./data', split='test', download=True, transform=transforms.Compose(test_transform))
-
-        corrupt_testset = CorruptDataset(testset, corruption)
-        input_size = [3, 224, 224]
-    return trainset, corrupt_testset, input_size
+    return corrupt_testset, input_size
 
 
 
@@ -74,10 +70,9 @@ def main():
 
 
     #Load Data and get image size
-    train_data, test_data, input_size = get_dataset(config["data_loader"])
+    test_data, input_size = get_dataset(config["data_loader"])
     batch_size = config["tnet"]["batch_size"]
     test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=True)
-    train_loader = torch.utils.data.DataLoader(train_data, batch_size=1, shuffle=False)
 
 
     #Pretrained Model Architecture
@@ -101,7 +96,7 @@ def main():
     #Transform Net Architecture
     transform_list = config["tnet"]["transform_list"]
     num_classes = len(transform_list)
-    num_epochs = 60
+    num_epochs = config["tnet"].get("epochs") or 60
     initial_params = []
     for tf in transform_list:
         if tf == "rotation":
@@ -139,7 +134,7 @@ def main():
         transform_net.load_state_dict(weight_dict)
 
     writer_name = config["tnet"]["save_as"]
-    trainer = TransformNetTrainer(transform_net, transform_net_name, transform_list, pretrained_model, train_loader, test_loader, writer_name,  device)
+    trainer = TransformNetTrainer(transform_net, transform_net_name, transform_list, pretrained_model, test_loader, writer_name,  device)
 
     torch.autograd.set_detect_anomaly(True)
     for epoch in range(num_epochs):
