@@ -21,8 +21,7 @@ class Trainer():
 
         timestamp = datetime.timestamp(datetime.now())
         self.train_writer= SummaryWriter("{}/train".format(run_name))
-        if self.val_loader:
-            self.val_writer= SummaryWriter("{}/val".format(run_name))
+        self.val_writer= SummaryWriter("{}/val".format(run_name))
 
         self.epoch = 0
 
@@ -54,8 +53,6 @@ class Trainer():
         self.epoch += 1
 
     def validate(self, cur_iter):
-        if not self.val_loader:
-            return
         self.model.eval()
         criterion = torch.nn.CrossEntropyLoss()
 
