@@ -29,10 +29,15 @@ def get_dataset(dataset_config):
             trainset = CorruptDataset(trainset, corruption, dataset)
 
     elif dataset == "MNIST":
-       train_transform = transforms.Compose([transforms.ToTensor(),
-                                          transforms.Normalize((0.1307,),(0.3087,)) ])
-       trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=train_transform)
        input_size = [1, 28, 28]
+
+       if not corruption:
+           train_transform = transforms.Compose([transforms.ToTensor(),
+                                          transforms.Normalize((0.1307,),(0.3087,)) ])
+           trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=train_transform)
+       else:
+           trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True)
+           trainset = CorruptDataset(trainset, corruption, dataset)
     elif dataset == "STL10":
        train_transform = transforms.Compose([transforms.Resize(size=224),
                                           transforms.RandomHorizontalFlip(),
@@ -88,7 +93,10 @@ def main():
 
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=False)
 
-    num_epochs = 40
+    if config["data_loader"]["name"] == "CIFAR10":
+        num_epochs = 40
+    else:
+        num_epochs = 20
 
     trainer = Trainer(model, train_loader, val_loader, config["save_as"], device)
 

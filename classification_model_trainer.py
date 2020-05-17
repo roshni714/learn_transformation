@@ -13,8 +13,12 @@ class Trainer():
         if mode == "fine_tune":
             for param in self.model.parameters():
                 param.requires_grad = False
-            self.model.linear.weight.requires_grad = True
-            self.model.linear.bias.requires_grad = True
+            if hasattr(self.model, "linear"):
+                self.model.linear.weight.requires_grad = True
+                self.model.linear.bias.requires_grad = True
+            else:
+                self.model.fc.weight.requires_grad = True
+                self.model.fc.bias.requires_grad = True
             self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=1e-3)
         else:
             self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
