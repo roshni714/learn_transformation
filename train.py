@@ -101,6 +101,7 @@ def main():
     for tf in transform_list:
         if tf == "rotation":
             initial_params.append(0)
+            initial_params.append(1)
         else:
             initial_params.append(1)
 

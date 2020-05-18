@@ -19,7 +19,11 @@ class TransformNetTrainer():
         self.transform_net_name = transform_net_name
 
         if self.transform_net_name == "vec": 
+<<<<<<< HEAD
             self.optimizer = torch.optim.Adam([transform_net], lr=1e-1)
+=======
+            self.optimizer = torch.optim.Adam([transform_net], lr=3e-1)
+>>>>>>> feature/temperature_scaling
         else:
             self.optimizer = torch.optim.Adam(self.transform_net.parameters(), lr=5e-5)
         names ='_'.join(transform_list)
@@ -105,7 +109,8 @@ class TransformNetTrainer():
 
         self.pretrained_model.eval()
         softmax = torch.nn.Softmax()
-        batch_loss = -torch.mean(torch.max(softmax(self.pretrained_model(test_example_batch)), dim=1)[0] - torch.max(softmax(self.pretrained_model(original)), dim=1)[0])
+        T = 10
+        batch_loss = -torch.mean(torch.max(softmax(self.pretrained_model(test_example_batch)/T), dim=1)[0] - torch.max(softmax(self.pretrained_model(original)/T), dim=1)[0])
         return batch_loss
 
     def entropy_loss(self, test_example_batch, original):
