@@ -1,13 +1,13 @@
 data_loader:
   name: "MNIST"
   corruption:
-    degrees: -100.
+    degrees: -10.
 device: "cuda:0"
 batch_size: 128
 tnet:
   name: "vec"
-  save_as: "runs/rot_-100"
-  save_dir: "tnet_models/rot_-100"
+  save_as: "runs/rot_-10"
+  save_dir: "tnet_models/rot_-10"
   transform_list: ["rotation"]
   batch_size: 128
 pretrained_model:

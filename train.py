@@ -96,7 +96,7 @@ def main():
     #Transform Net Architecture
     transform_list = config["tnet"]["transform_list"]
     num_classes = len(transform_list)
-    num_epochs = config["tnet"].get("epochs") or 60
+    num_epochs = config["tnet"].get("epochs") or 10
     initial_params = []
     for tf in transform_list:
         if tf == "rotation":

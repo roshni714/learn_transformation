@@ -19,7 +19,7 @@ class TransformNetTrainer():
         self.transform_net_name = transform_net_name
 
         if self.transform_net_name == "vec": 
-            self.optimizer = torch.optim.Adam([transform_net], lr=5e-1)
+            self.optimizer = torch.optim.Adam([transform_net], lr=3e-1)
         else:
             self.optimizer = torch.optim.Adam(self.transform_net.parameters(), lr=5e-5)
         names ='_'.join(transform_list)
