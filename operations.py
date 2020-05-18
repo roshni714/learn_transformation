@@ -2,6 +2,8 @@ import torch
 import torchgeometry as tgm
 import kornia
 from torchvision import transforms
+import math
+
 
 def render_img(img):
     if img.get_device() >= 0:
