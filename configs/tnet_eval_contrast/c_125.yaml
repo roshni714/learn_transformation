@@ -10,4 +10,6 @@ tnet:
   path: "tnet_models/c_125/checkpoint_60.tar"
 pretrained_model:
   path: "pretrained_models/cifar_normalize/checkpoint_40.tar"
+oracle_model:
+  path: "pretrained_models/cifar_c_125/checkpoint_40.tar"
 

@@ -40,8 +40,12 @@ def get_dataset(dataset_config):
        testset = CorruptDataset(new_testset, corruption, dataset)
 
        input_size = [1, 28, 28]
-    
-    return testset, input_size
+   
+    train_len = int(0.8 * len(testset))
+
+    train, val = random_split(testset, [train_len, len(testset) - train_len])
+    return train, val, input_size
+
 
 def main():
     parser = argparse.ArgumentParser(description="Classifier")
@@ -62,7 +66,7 @@ def main():
     device = torch.device(config["device"] if torch.cuda.is_available() else "cpu")
     print("Device: {}".format(device))
 
-    test_data,  input_size = get_dataset(config["data_loader"])
+    train, val, input_size = get_dataset(config["data_loader"])
 
     #Pretrained Model Architecture
     if config["data_loader"]["name"] =="MNIST":
@@ -83,10 +87,12 @@ def main():
 
     batch_size = config["batch_size"]
 
-    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False)
+    train_loader = torch.utils.data.DataLoader(train, batch_size=batch_size, shuffle=True)
+    val_loader = torch.utils.data.DataLoader(val, batch_size=batch_size, shuffle=True)
+
     num_epochs = 61
 
-    trainer = Trainer(model, test_loader, None, config["save_as"], device, mode="fine_tune")
+    trainer = Trainer(model, train_loader, val_loader, config["save_as"], device, mode="fine_tune")
 
     torch.autograd.set_detect_anomaly(True)
     for epoch in range(num_epochs):

@@ -13,16 +13,19 @@ class Trainer():
         if mode == "fine_tune":
             for param in self.model.parameters():
                 param.requires_grad = False
-            self.model.linear.weight.requires_grad = True
-            self.model.linear.bias.requires_grad = True
+            if hasattr(self.model, "linear"):
+                self.model.linear.weight.requires_grad = True
+                self.model.linear.bias.requires_grad = True
+            else:
+                self.model.fc.weight.requires_grad = True
+                self.model.fc.bias.requires_grad = True
             self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=1e-3)
         else:
             self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
 
         timestamp = datetime.timestamp(datetime.now())
         self.train_writer= SummaryWriter("{}/train".format(run_name))
-        if self.val_loader:
-            self.val_writer= SummaryWriter("{}/val".format(run_name))
+        self.val_writer= SummaryWriter("{}/val".format(run_name))
 
         self.epoch = 0
 
@@ -54,8 +57,6 @@ class Trainer():
         self.epoch += 1
 
     def validate(self, cur_iter):
-        if not self.val_loader:
-            return
         self.model.eval()
         criterion = torch.nn.CrossEntropyLoss()
 
