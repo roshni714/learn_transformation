@@ -1,0 +1,11 @@
+data_loader:
+  name: "MNIST"
+  corruption:
+    degrees: 30
+  n_examples: 1500
+pretrained_model: 
+    path: "pretrained_models/mnist_normalize/checkpoint_10.tar"
+save_dir: "tl_models/rot_30/n_1500"
+save_as: "runs/tl_rot_30/n_1500"
+device: "cuda:3"
+batch_size: 32

@@ -10,4 +10,6 @@ tnet:
   path: "tnet_models/rot_-100/checkpoint_60.tar"
 pretrained_model:
   path: "pretrained_models/mnist_normalize/checkpoint_10.tar"
+oracle_model:
+  path: "pretrained_models/mnist_rot_-100/checkpoint_10.tar"
 

@@ -32,6 +32,7 @@ def apply_transform_batch(img_batch, transform_out, transform_list):
                 act = 0.5*tanh(transform_out[:, j])
 
             mean_transform[:, j] += torch.mean(act)
+
             if act.shape[0] == 1:
                 variance_transform[:, j] = 0
             else:
@@ -59,13 +60,13 @@ def apply_transform_batch_nondiff(img_batch, transform_out, transform_list):
         for j, tf in enumerate(transform_list):
             name = tf
             if name == "saturation":
-                sat_act = 2 * sigmoid(transform_out[:, j])
+                sat_act = sigmoid(transform_out[:, j])
                 transform_act[j] += torch.mean(sat_act)
             if name == "brightness":
                 bright_act = softplus(transform_out[:, j])
                 transform_act[j] += torch.mean(bright_act)
             if name == "rotation":
-                rot_act = 30 * torch.sin(transform_out[:, j])
+                rot_act = 180 * torch.sin(transform_out[:, j])
                 transform_act[j] += torch.mean(rot_act)
             if name == "hue":
                 hue_act = 0.5 * tanh(transform_out[:, j])

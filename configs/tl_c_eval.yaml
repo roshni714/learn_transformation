@@ -1,10 +1,10 @@
 data_loader:
-  name: "CIFAR10"
+  name: "MNIST"
   corruption:
-    contrast: 0.50
+    degrees: 30
 device: "cuda:3"
 batch_size: 128
 tl_model:
-  transform_list: ["contrast"]
-  path: "tl_models/c_050"
+  transform_list: ["rotation"]
+  path: "tl_models/rot_30"
 

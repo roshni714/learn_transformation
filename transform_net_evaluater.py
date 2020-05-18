@@ -37,6 +37,7 @@ class TransformNetEvaluater():
                 transform_params = self.transform_net(img_batch_cuda)
             else:
                 transform_params = self.transform_net
+            print(transform_params)
             new_img_batch, mean_transform, var_transform  = diff_tf.apply_transform_batch(img_batch_cuda, transform_params, self.transform_list)
             new_img_batch = new_img_batch.to(self.device)
             out = torch.argmax(self.pretrained_model(new_img_batch), dim=1)
