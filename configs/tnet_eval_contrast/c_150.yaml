@@ -7,7 +7,7 @@ batch_size: 128
 tnet:
   name: "vec"
   transform_list: ["contrast"]
-  path: "tnet_models/c_150/checkpoint_60.tar"
+  path: "tnet_models/c_150/checkpoint_10.tar"
 pretrained_model:
   path: "pretrained_models/cifar_normalize/checkpoint_40.tar"
 oracle_model:

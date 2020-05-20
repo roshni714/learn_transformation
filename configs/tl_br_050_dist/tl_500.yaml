@@ -1,0 +1,12 @@
+data_loader:
+  name: "CIFAR10"
+  corruption:
+    brightness: 0.50
+    brightness_dist: 0.05
+  n_examples: 500
+pretrained_model: 
+    path: "pretrained_models/cifar_normalize/checkpoint_40.tar"
+save_dir: "tl_models/br_050_dist/n_500"
+save_as: "runs/tl_br_050_dist/n_500"
+device: "cuda:3"
+batch_size: 32
