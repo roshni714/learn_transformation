@@ -1,0 +1,15 @@
+data_loader:
+  name: "CIFAR10"
+  corruption:
+    contrast: 0.75
+device: "cuda:3"
+batch_size: 128
+tnet:
+  name: "cnn"
+  transform_list: ["contrast"]
+  path: "tnet_models/c_075/checkpoint_10.tar"
+pretrained_model:
+  path: "pretrained_models/cifar_normalize/checkpoint_40.tar"
+oracle_model:
+  path: "pretrained_models/cifar_c_075/checkpoint_40.tar"
+

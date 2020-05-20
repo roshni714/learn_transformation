@@ -1,17 +1,15 @@
 data_loader:
   name: "CIFAR10"
   corruption:
-    brightness: 1.
-    brightness_var: 0.1
+    brightness: 1.25
 device: "cuda:3"
 batch_size: 128
 tnet:
-  name: "vec"
+  name: "cnn"
   transform_list: ["brightness"]
-  path: "tnet_models/br_100_dist/checkpoint_10.tar"
+  path: "tnet_models/br_125/checkpoint_10.tar"
 pretrained_model:
   path: "pretrained_models/cifar_normalize/checkpoint_40.tar"
 oracle_model:
-  path: "pretrained_models/cifar_br_100_dist/checkpoint_40.tar"
-
+  path: "pretrained_models/cifar_br_125/checkpoint_40.tar"
 

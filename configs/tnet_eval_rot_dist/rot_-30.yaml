@@ -1,15 +1,15 @@
 data_loader:
-  name: "MNIST"
+  name: "CIFAR10"
   corruption:
-    degrees: 10.
-    degrees_var: 2
+    degrees: -30.
+    degrees_var: 2.
 device: "cuda:3"
 batch_size: 128
 tnet:
   transform_list: ["rotation"]
-  path: "tnet_models/rot_10_dist/checkpoint_10.tar"
+  path: "tnet_models/rot_-30_dist/checkpoint_10.tar"
 pretrained_model:
   path: "pretrained_models/mnist_normalize/checkpoint_40.tar"
 oracle_model:
-  path: "pretrained_models/mnist_rot_10_dist/checkpoint_40.tar"
+  path: "pretrained_models/mnist_rot_-30_dist/checkpoint_40.tar"
 

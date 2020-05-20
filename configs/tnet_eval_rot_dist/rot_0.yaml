@@ -1,15 +1,15 @@
 data_loader:
-  name: "CIFAR10"
+  name: "MNIST"
   corruption:
     degrees: 0.
-    degrees_var: 0.2
-            #    color_jitter:
-            #      brightness: [0.49, 0.51]
+    degrees_var: 2
 device: "cuda:3"
 batch_size: 128
 tnet:
   transform_list: ["rotation"]
-  path: "tnet_models/rot_0_dist/checkpoint_60.tar"
+  path: "tnet_models/rot_0_dist/checkpoint_10.tar"
 pretrained_model:
-  path: "pretrained_models/cifar_resize_randomcrop/checkpoint_17.tar"
+  path: "pretrained_models/mnist_normalize/checkpoint_10.tar"
+oracle_model:
+  path: "pretrained_models/mnist_rot_0_dist/checkpoint_20.tar"
 
