@@ -6,7 +6,7 @@ data_loader:
 device: "cuda:3"
 batch_size: 128
 tnet:
-  name: "vec"
+  name: "cnn"
   transform_list: ["brightness"]
   path: "tnet_models/br_175_dist/checkpoint_10.tar"
 pretrained_model:
