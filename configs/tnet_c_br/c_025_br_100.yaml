@@ -2,14 +2,16 @@ data_loader:
   name: "CIFAR10"
   corruption:
     contrast: 0.250
+    contrast_var: 0.05
     brightness: 1.0
+    brightness_var: 0.05
 device: "cuda:0"
 batch_size: 128
 tnet:
-  name: "vec"
-  epochs: 80
-  save_as: "runs/t_10/c_025_br_100"
-  save_dir: "tnet_models/t_10/c_025_br_100/"
+  name: "cnn"
+  epochs: 60
+  save_as: "runs/c_025_br_100"
+  save_dir: "tnet_models/c_025_br_100/"
   transform_list: ["contrast", "brightness"]
   batch_size: 128
 pretrained_model:

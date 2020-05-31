@@ -112,11 +112,12 @@ def main():
     for row in rows:
         for i, tf in enumerate(transform_list):
             row["{}_param".format(tf)] = config["data_loader"]["corruption"][keys[tf]]
+            row["{}_param_std".format(tf)] = config["data_loader"]["corruption"]["{}_var".format(keys[tf])]
 
     tf_name= "_".join(transform_list)
 
     if transform_net_name != "vec":
-        name = "results_dist_"
+        name = "results_std_30"
     else:
         name = "results"
     

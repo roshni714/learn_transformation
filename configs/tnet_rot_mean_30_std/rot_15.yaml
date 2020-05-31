@@ -1,0 +1,16 @@
+data_loader:
+  name: "MNIST"
+  corruption:
+    degrees: 30.
+    degrees_var: 15.
+device: "cuda:0"
+batch_size: 128
+tnet:
+  name: "cnn"
+  save_as: "runs/rot_30_15_dist"
+  save_dir: "tnet_models/rot_30_15_dist"
+  transform_list: ["rotation"]
+  batch_size: 128
+pretrained_model:
+  path: "pretrained_models/mnist_normalize/checkpoint_10.tar"
+

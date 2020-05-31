@@ -29,7 +29,7 @@ def apply_transform_batch(img_batch, transform_out, transform_list):
             if name == "brightness":
                 act = softplus(transform_out[:, j])
             if name == "rotation":
-                act = biternion_angle(transform_out[:, j:j+2])
+                act = 180 * torch.sin(transform_out[:, j])
             if name == "hue":
                 act = 0.5*tanh(transform_out[:, j])
 
@@ -51,14 +51,6 @@ def apply_transform_batch(img_batch, transform_out, transform_list):
 
         return new_img_batch, mean_transform, variance_transform
             
-def biternion_angle(biternion):
-
-    normalized_biternion = biternion/torch.sqrt(torch.sum(torch.pow(biternion, 2), dim=1))
-
-    angle = torch.atan2(normalized_biternion[:, 0], normalized_biternion[:, 1]) *180 / math.pi
-
-    return angle
-
 def apply_transform_batch_nondiff(img_batch, transform_out, transform_list):
         sigmoid = torch.nn.Sigmoid()
         tanh = torch.nn.Tanh()

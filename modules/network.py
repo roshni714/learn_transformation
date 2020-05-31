@@ -1,7 +1,7 @@
 import torch.nn as nn
 from torchvision import models
 from modules.resnet2 import ResNet18 
-from modules.net import Net
+from modules.net import Net, Net_OneChannel
 
 def get_model(name, input_size, pretrained, num_channels, num_classes):
     """
@@ -17,7 +17,11 @@ def get_model(name, input_size, pretrained, num_channels, num_classes):
     """
     if "cnn"==name and input_size != [3, 224, 224]:
         print("CNN")
-        model = Net(num_classes)
+        if input_size[0] == 3:
+             model = Net(num_classes)
+        elif input_size[0] == 1:
+             model = Net_OneChannel(num_classes)
+
     if "resnet18"==name and input_size!=[3, 224, 224]:
         if num_channels == 1:
             print("hello")

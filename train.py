@@ -101,7 +101,6 @@ def main():
     for tf in transform_list:
         if tf == "rotation":
             initial_params.append(0)
-            initial_params.append(1)
         else:
             initial_params.append(1)
 
@@ -112,7 +111,7 @@ def main():
     elif config["tnet"]["name"] == "resnet18":
         transform_net_name = "resnet18"
         transform_net = network.get_model(name="resnet18",
-                              input_size=[3, 32, 32],
+                              input_size=input_size,
                               pretrained=False, 
                               num_channels=num_channels, 
                               num_classes=num_classes).to(device)
@@ -124,7 +123,7 @@ def main():
     else:
         transform_net_name = "cnn"
         transform_net = network.get_model(name="cnn",
-                              input_size=[3, 32, 32],
+                              input_size=input_size,
                               pretrained=False, 
                               num_channels=num_channels, 
                               num_classes=num_classes).to(device)

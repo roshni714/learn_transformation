@@ -1,0 +1,10 @@
+data_loader:
+  name: "MNIST"
+  corruption:
+    degrees: 0
+    degrees_var: 10
+    mode: "train"
+save_dir: "pretrained_models/mnist_rot_0_10_dist"
+save_as: "runs/mnist_rot_0_10_dist"
+device: "cuda:0"
+batch_size: 32

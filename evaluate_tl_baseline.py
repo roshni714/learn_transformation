@@ -92,6 +92,7 @@ def main():
 
     tf_name= config["tl_model"]["path"].split("/")[-1]
 
+    
     name = "tl"
     
     with open('{}_{}.csv'.format(name, tf_name), 'a+', newline='') as csvfile:
