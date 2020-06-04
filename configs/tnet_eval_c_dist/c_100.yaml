@@ -2,13 +2,13 @@ data_loader:
   name: "CIFAR10"
   corruption:
     contrast: 1.
-    contrast_var: 0.1
+    contrast_var: 0.05
 device: "cuda:3"
 batch_size: 128
 tnet:
   name: "cnn"
-  transform_list: ["contrast"]
-  path: "tnet_models/c_100_dist/checkpoint_10.tar"
+  transform_list: ["contrast", "brightness", "rotation"]
+  path: "tnet_models/c_100_dist/checkpoint_30.tar"
 pretrained_model:
   path: "pretrained_models/cifar_normalize/checkpoint_40.tar"
 oracle_model:

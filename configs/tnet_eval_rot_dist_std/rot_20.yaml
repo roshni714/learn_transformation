@@ -7,8 +7,8 @@ device: "cuda:3"
 batch_size: 128
 tnet:
   name: "cnn"
-  transform_list: ["rotation"]
-  path: "tnet_models/rot_0_20_dist/checkpoint_10.tar"
+  transform_list: ["contrast", "brightness", "rotation"]
+  path: "tnet_models/rot_0_20_dist/checkpoint_30.tar"
 pretrained_model:
   path: "pretrained_models/mnist_normalize/checkpoint_10.tar"
 oracle_model:

@@ -3,14 +3,16 @@ data_loader:
   corruption:
     contrast: 1.75
     contrast_var: 0.05
-    brightness: 1.00
+    brightness: 0.50
     brightness_var: 0.05
 device: "cuda:3"
 batch_size: 128
 tnet:
   name: "cnn"
-  transform_list: ["contrast", "brightness"]
-  path: "tnet_models/c_175_br_100/checkpoint_60.tar"
+  transform_list: ["contrast", "brightness", "rotation"]
+  path: "tnet_models/c_175_br_050/checkpoint_30.tar"
 pretrained_model:
   path: "pretrained_models/cifar_normalize/checkpoint_40.tar"
+oracle_model:
+  path: "pretrained_models/cifar_c_175_br_050_dist/checkpoint_40.tar"
 

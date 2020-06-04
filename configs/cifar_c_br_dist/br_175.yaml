@@ -1,12 +1,12 @@
 data_loader:
   name: "CIFAR10"
   corruption:
-    brightness: 1.75
+    brightness: 0.50
     brightness_var: 0.05
-    contrast: 1.00
+    contrast: 1.75
     contrast_var: 0.05
     mode: "train"
-save_dir: "pretrained_models/cifar_br_175_c_100_dist"
-save_as: "runs/cifar_br_175_c_100_dist"
-device: "cuda:0"
+save_dir: "pretrained_models/cifar_c_175_br_050_dist"
+save_as: "runs/cifar_c_175_br_050_dist"
+device: "cuda:2"
 batch_size: 32

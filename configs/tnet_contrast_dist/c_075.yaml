@@ -3,13 +3,13 @@ data_loader:
   corruption:
     contrast: 0.75
     contrast_var: 0.05
-device: "cuda:0"
+device: "cuda:2"
 batch_size: 128
 tnet:
   name: "cnn"
   save_as: "runs/c_075_dist"
   save_dir: "tnet_models/c_075_dist/"
-  transform_list: ["contrast"]
+  transform_list: ["contrast", "brightness", "rotation"]
   batch_size: 128
 pretrained_model:
   path: "pretrained_models/cifar_normalize/checkpoint_40.tar"
